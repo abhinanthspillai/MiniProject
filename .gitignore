@@ -1,0 +1,36 @@
+# Built application files
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Java class files
+*.class
+
+# Generated build files
+.gradle/
+build/
+app/build/
+captures/
+bin/
+gen/
+out/
+
+# Local configuration file (SDK path, machine specific settings)
+local.properties
+
+# Android Studio / IntelliJ / VSCode
+.idea/
+.vscode/
+*.iml
+.navigation/
+
+# Environment and secrets
+.env
+*.pem
+*.keystore
+*.jks
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
