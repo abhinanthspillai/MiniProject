@@ -27,9 +27,22 @@ local.properties
 
 # Environment and secrets
 .env
+.env.local
 *.pem
 *.keystore
 *.jks
+
+# Python / FastAPI / Pytest
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+ENV/
+*.sqlite3
 
 # OS / Editor junk
 .DS_Store
