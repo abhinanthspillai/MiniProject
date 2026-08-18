@@ -1,0 +1,19 @@
+package com.netraze.app.data.remote.api
+
+import com.netraze.app.data.remote.dto.LoginRequestDto
+import com.netraze.app.data.remote.dto.LoginResponseDto
+import com.netraze.app.data.remote.dto.UserDto
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.POST
+
+interface AuthApi {
+
+    @POST("api/v1/auth/login")
+    suspend fun login(
+        @Body request: LoginRequestDto
+    ): LoginResponseDto
+
+    @GET("api/v1/auth/me")
+    suspend fun getMe(): UserDto
+}

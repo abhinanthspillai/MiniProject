@@ -30,8 +30,8 @@ fun LoginForm(
         AppTextField(
             value = identity,
             onValueChange = onIdentityChange,
-            label = "Email Address or Username",
-            placeholder = "Enter your email or username",
+            label = "Email Address",
+            placeholder = "Enter your email address",
             leadingIcon = Icons.Rounded.Email,
             enabled = !isLoading,
             isError = !errorMessage.isNullOrBlank(),

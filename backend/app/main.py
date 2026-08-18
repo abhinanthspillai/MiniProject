@@ -1,14 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.health import router as health_router
 from app.core.config import settings
+from app.api.health import router as health_router
+from app.api.auth import router as auth_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-# CORS middleware setup
+# Configure CORS
 if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
@@ -18,6 +19,7 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
-# Include health routes at root level and API v1 prefix
-app.include_router(health_router)
-app.include_router(health_router, prefix=settings.API_V1_STR)
+# Register Routers
+app.include_router(health_router, prefix="", tags=["Health"])
+app.include_router(health_router, prefix=settings.API_V1_STR, tags=["Health"])
+app.include_router(auth_router, prefix=settings.API_V1_STR)

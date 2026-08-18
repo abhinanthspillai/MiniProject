@@ -16,6 +16,15 @@ class Base(DeclarativeBase):
     pass
 
 
+def get_db():
+    """Dependency for yielding database sessions per request."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 def check_database_connection() -> dict:
     """
     Checks database reachability by executing a simple SELECT 1 query.
