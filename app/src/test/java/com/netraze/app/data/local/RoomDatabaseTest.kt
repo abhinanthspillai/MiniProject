@@ -27,7 +27,7 @@ import org.robolectric.annotation.Config
 import java.util.UUID
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
+@Config(manifest = Config.NONE, sdk = [33])
 class RoomDatabaseTest {
 
     private lateinit var db: NetrazeDatabase
@@ -167,7 +167,6 @@ class RoomDatabaseTest {
         val pos = SpatialPositionEntity(id = posId, surveyId = surveyId, label = "Point 1", createdAt = 10L)
         db.spatialPositionDao().insertSpatialPosition(pos)
 
-        // Attempt 1 without correlated cycle yet
         val attempt1Id = UUID.randomUUID()
         val attempt1 = ScanAttemptEntity(
             id = attempt1Id, surveyId = surveyId, spatialPositionId = posId,
@@ -176,7 +175,6 @@ class RoomDatabaseTest {
         db.scanAttemptDao().insertScanAttempt(attempt1)
         assertNull(db.scanAttemptDao().getScanAttemptById(attempt1Id)?.correlatedScanCycleId)
 
-        // Cycle captured
         val cycleId = UUID.randomUUID()
         val cycle = ScanCycleEntity(
             id = cycleId, surveyId = surveyId, spatialPositionId = posId,
@@ -184,10 +182,8 @@ class RoomDatabaseTest {
         )
         db.scanCycleDao().insertScanCycle(cycle)
 
-        // Correlate attempt 1
         db.scanAttemptDao().updateScanAttemptCorrelation(attempt1Id, "completed", cycleId)
 
-        // Correlate attempt 2 to SAME cycle
         val attempt2Id = UUID.randomUUID()
         val attempt2 = ScanAttemptEntity(
             id = attempt2Id, surveyId = surveyId, spatialPositionId = posId,
