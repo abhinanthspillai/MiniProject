@@ -11,6 +11,7 @@ val NetrazeShapes = Shapes(
     extraLarge = RoundedCornerShape(32.dp)
 )
 
+val TopSheetShape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
 val CardShape = RoundedCornerShape(28.dp)
-val InputShape = RoundedCornerShape(14.dp)
-val ButtonShape = RoundedCornerShape(16.dp)
+val InputShape = RoundedCornerShape(12.dp)
+val ButtonShape = RoundedCornerShape(26.dp)

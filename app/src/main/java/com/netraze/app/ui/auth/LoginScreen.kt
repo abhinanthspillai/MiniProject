@@ -1,10 +1,10 @@
 package com.netraze.app.ui.auth
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -12,14 +12,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,7 +28,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.netraze.app.ui.components.LoginForm
 import com.netraze.app.ui.components.NetrazeLogo
-import com.netraze.app.ui.theme.CardShape
 import com.netraze.app.ui.theme.FormSurfaceBlue
 import com.netraze.app.ui.theme.NetrazeTheme
 import com.netraze.app.ui.theme.NetrazeTypography
@@ -40,6 +38,7 @@ import com.netraze.app.ui.theme.TextOnBlue
 import com.netraze.app.ui.theme.TextOnBlueSecondary
 import com.netraze.app.ui.theme.TextPrimary
 import com.netraze.app.ui.theme.TextSecondary
+import com.netraze.app.ui.theme.TopSheetShape
 
 @Composable
 fun LoginRoute(
@@ -75,60 +74,58 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.lg, vertical = Spacing.xl),
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(Spacing.md))
-
-            // Upper Header & Branding Area
-            NetrazeLogo(
-                size = 72.dp,
-                containerColor = PrimaryBlue,
-                iconColor = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.md))
-
-            Text(
-                text = "Netraze",
-                style = NetrazeTypography.displaySmall,
-                color = TextPrimary,
-                fontWeight = FontWeight.ExtraBold,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.xs))
-
-            Text(
-                text = "Indoor Wi-Fi Survey & Analysis",
-                style = NetrazeTypography.titleMedium,
-                color = TextSecondary,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.xl))
-
-            // Blue Rounded Form Surface Container
-            Card(
+            // Upper Branding Section (~35-40% height)
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = Spacing.lg),
-                shape = CardShape,
-                colors = CardDefaults.cardColors(
-                    containerColor = FormSurfaceBlue
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 6.dp
+                    .padding(horizontal = Spacing.lg)
+                    .padding(top = 40.dp, bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                NetrazeLogo(
+                    size = 72.dp,
+                    containerColor = PrimaryBlue,
+                    iconColor = Color.White
                 )
+
+                Spacer(modifier = Modifier.height(Spacing.md))
+
+                Text(
+                    text = "Netraze",
+                    style = NetrazeTypography.displaySmall,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(Spacing.xs))
+
+                Text(
+                    text = "Indoor Wi-Fi Survey & Analysis",
+                    style = NetrazeTypography.titleMedium,
+                    color = TextSecondary,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            // Lower Curved Blue Surface Container (Full width, extends to bottom)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = true)
+                    .clip(TopSheetShape)
+                    .background(FormSurfaceBlue)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(all = Spacing.xl)
+                        .padding(horizontal = Spacing.xl, vertical = 32.dp)
                 ) {
                     Text(
-                        text = "Welcome Back",
+                        text = "Welcome Back!",
                         style = NetrazeTypography.headlineMedium,
                         color = TextOnBlue,
                         fontWeight = FontWeight.Bold
@@ -137,12 +134,12 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(Spacing.xs))
 
                     Text(
-                        text = "Sign in to your account to access survey system",
+                        text = "Sign in to your account to continue",
                         style = NetrazeTypography.bodyMedium,
                         color = TextOnBlueSecondary
                     )
 
-                    Spacer(modifier = Modifier.height(Spacing.lg))
+                    Spacer(modifier = Modifier.height(Spacing.xl))
 
                     LoginForm(
                         identity = uiState.identity,
@@ -166,7 +163,7 @@ fun LoginScreen(
 // PREVIEWS FOR VARIOUS UI STATES
 // ==========================================
 
-@Preview(showBackground = true, name = "Default Empty State")
+@Preview(showBackground = true, name = "Default State", heightDp = 800)
 @Composable
 fun LoginScreenDefaultPreview() {
     NetrazeTheme {
@@ -180,7 +177,7 @@ fun LoginScreenDefaultPreview() {
     }
 }
 
-@Preview(showBackground = true, name = "Populated State")
+@Preview(showBackground = true, name = "Populated State", heightDp = 800)
 @Composable
 fun LoginScreenPopulatedPreview() {
     NetrazeTheme {
@@ -198,7 +195,7 @@ fun LoginScreenPopulatedPreview() {
     }
 }
 
-@Preview(showBackground = true, name = "Loading State")
+@Preview(showBackground = true, name = "Loading State", heightDp = 800)
 @Composable
 fun LoginScreenLoadingPreview() {
     NetrazeTheme {
@@ -216,7 +213,7 @@ fun LoginScreenLoadingPreview() {
     }
 }
 
-@Preview(showBackground = true, name = "Invalid Credentials Error State")
+@Preview(showBackground = true, name = "Invalid Credentials Error State", heightDp = 800)
 @Composable
 fun LoginScreenErrorPreview() {
     NetrazeTheme {
@@ -225,24 +222,6 @@ fun LoginScreenErrorPreview() {
                 identity = "technician@wifisurvey.net",
                 password = "WrongPassword",
                 errorMessage = "Invalid email/username or password. Please try again."
-            ),
-            onIdentityChanged = {},
-            onPasswordChanged = {},
-            onTogglePasswordVisibility = {},
-            onSubmit = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Network Unavailable Error State")
-@Composable
-fun LoginScreenNetworkErrorPreview() {
-    NetrazeTheme {
-        LoginScreen(
-            uiState = LoginUiState(
-                identity = "technician@wifisurvey.net",
-                password = "Password123",
-                errorMessage = "Network server unavailable. Please check your connection."
             ),
             onIdentityChanged = {},
             onPasswordChanged = {},

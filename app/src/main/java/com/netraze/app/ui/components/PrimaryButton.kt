@@ -12,9 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.netraze.app.ui.theme.ButtonShape
+import com.netraze.app.ui.theme.CtaTextBlue
+import com.netraze.app.ui.theme.CtaWhiteBackground
 import com.netraze.app.ui.theme.NetrazeTypography
-import com.netraze.app.ui.theme.PrimaryBlue
-import com.netraze.app.ui.theme.TextOnBlue
 
 @Composable
 fun PrimaryButton(
@@ -23,20 +23,20 @@ fun PrimaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     isLoading: Boolean = false,
-    containerColor: Color = PrimaryBlue,
-    contentColor: Color = TextOnBlue
+    containerColor: Color = CtaWhiteBackground,
+    contentColor: Color = CtaTextBlue
 ) {
     Button(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp),
+            .height(54.dp),
         enabled = enabled && !isLoading,
         shape = ButtonShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = contentColor,
-            disabledContainerColor = containerColor.copy(alpha = 0.45f),
+            disabledContainerColor = containerColor.copy(alpha = 0.5f),
             disabledContentColor = contentColor.copy(alpha = 0.6f)
         )
     ) {

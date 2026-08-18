@@ -14,7 +14,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import com.netraze.app.ui.theme.InputPlaceholder
+import com.netraze.app.ui.theme.InputPlaceholderOnBlue
 
 @Composable
 fun PasswordField(
@@ -42,7 +42,7 @@ fun PasswordField(
                 Icon(
                     imageVector = if (isPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
                     contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
-                    tint = InputPlaceholder
+                    tint = InputPlaceholderOnBlue
                 )
             }
         },

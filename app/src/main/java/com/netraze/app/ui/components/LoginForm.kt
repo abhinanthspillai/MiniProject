@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Email
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
@@ -32,7 +32,7 @@ fun LoginForm(
             onValueChange = onIdentityChange,
             label = "Email Address or Username",
             placeholder = "Enter your email or username",
-            leadingIcon = Icons.Rounded.Person,
+            leadingIcon = Icons.Rounded.Email,
             enabled = !isLoading,
             isError = !errorMessage.isNullOrBlank(),
             keyboardOptions = KeyboardOptions(
@@ -64,7 +64,7 @@ fun LoginForm(
             ErrorMessage(message = errorMessage)
         }
 
-        Spacer(modifier = Modifier.height(Spacing.lg))
+        Spacer(modifier = Modifier.height(Spacing.xl))
 
         PrimaryButton(
             text = "Sign In",
