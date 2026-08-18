@@ -21,9 +21,11 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.util.UUID
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class RoomDatabaseTest {
 
     private lateinit var db: NetrazeDatabase
@@ -38,7 +40,9 @@ class RoomDatabaseTest {
 
     @After
     fun closeDb() {
-        db.close()
+        if (::db.isInitialized) {
+            db.close()
+        }
     }
 
     @Test
@@ -80,7 +84,7 @@ class RoomDatabaseTest {
         val retrieved = db.surveyDao().getSurveyById(surveyId)
         assertNotNull(retrieved)
         assertEquals("Survey 1", retrieved?.title)
-        assertEquals(surveyId, retrieved?.id) // Canonical UUID preserved
+        assertEquals(surveyId, retrieved?.id)
     }
 
     @Test
@@ -108,7 +112,7 @@ class RoomDatabaseTest {
         val attempt = ScanAttemptEntity(
             id = attemptId,
             surveyId = surveyId,
-            spatialPositionId = null, // Spatially unbound attempt
+            spatialPositionId = null,
             dispatchedAtWallclock = 100L,
             status = "dispatched"
         )
@@ -118,7 +122,6 @@ class RoomDatabaseTest {
         assertNotNull(savedAttempt)
         assertNull(savedAttempt?.spatialPositionId)
 
-        // Unbound ScanCycle
         val cycleId = UUID.randomUUID()
         val cycle = ScanCycleEntity(
             id = cycleId,
@@ -130,7 +133,6 @@ class RoomDatabaseTest {
             createdAt = 105L
         )
 
-        // Insert cycle with 0 observations (structurally valid)
         db.scanCycleDao().insertScanCycleWithObservations(cycle, emptyList())
 
         val savedCycle = db.scanCycleDao().getScanCycleById(cycleId)
@@ -182,7 +184,6 @@ class RoomDatabaseTest {
             bssid = bssid, rssiDbm = -58, frequencyMhz = 5180, channel = 36, channelSource = "derived", capabilities = "WPA2"
         )
 
-        // Transactional insert
         db.scanCycleDao().insertScanCycleWithObservations(cycle, listOf(obs1, obs2))
 
         val obsList = db.wifiObservationDao().getObservationsForCycle(cycleId)
