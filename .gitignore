@@ -15,6 +15,7 @@ captures/
 bin/
 gen/
 out/
+.kotlin/
 
 # Local configuration file (SDK path, machine specific settings)
 local.properties
