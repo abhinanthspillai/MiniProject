@@ -16,6 +16,9 @@ interface ScanAttemptDao {
     @Query("SELECT * FROM scan_attempts WHERE id = :id")
     suspend fun getScanAttemptById(id: UUID): ScanAttemptEntity?
 
-    @Query("UPDATE scan_attempts SET status = :status WHERE id = :id")
-    suspend fun updateScanAttemptStatus(id: UUID, status: String)
+    @Query("SELECT * FROM scan_attempts WHERE correlatedScanCycleId = :scanCycleId")
+    suspend fun getScanAttemptsForCycle(scanCycleId: UUID): List<ScanAttemptEntity>
+
+    @Query("UPDATE scan_attempts SET status = :status, correlatedScanCycleId = :scanCycleId WHERE id = :id")
+    suspend fun updateScanAttemptCorrelation(id: UUID, status: String, scanCycleId: UUID?)
 }

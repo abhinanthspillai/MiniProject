@@ -12,13 +12,10 @@ import com.netraze.app.data.local.dao.WifiObservationDao
 import com.netraze.app.data.local.entity.BuildingEntity
 import com.netraze.app.data.local.entity.FloorEntity
 import com.netraze.app.data.local.entity.FloorPlanEntity
-import com.netraze.app.data.local.entity.FloorPlanPositionEntity
-import com.netraze.app.data.local.entity.LocationFixEntity
 import com.netraze.app.data.local.entity.ProjectEntity
 import com.netraze.app.data.local.entity.ScanAttemptEntity
 import com.netraze.app.data.local.entity.ScanCycleEntity
 import com.netraze.app.data.local.entity.SimpleMapEntity
-import com.netraze.app.data.local.entity.SimpleMapPositionEntity
 import com.netraze.app.data.local.entity.SpatialPositionEntity
 import com.netraze.app.data.local.entity.SurveyAreaEntity
 import com.netraze.app.data.local.entity.SurveyEntity
@@ -34,9 +31,6 @@ import com.netraze.app.data.local.entity.WifiObservationEntity
         SimpleMapEntity::class,
         SurveyEntity::class,
         SpatialPositionEntity::class,
-        FloorPlanPositionEntity::class,
-        SimpleMapPositionEntity::class,
-        LocationFixEntity::class,
         ScanAttemptEntity::class,
         ScanCycleEntity::class,
         WifiObservationEntity::class

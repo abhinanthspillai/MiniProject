@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import Optional
 from sqlalchemy import (
-    String,
     Text,
     Boolean,
     Integer,
@@ -12,10 +11,8 @@ from sqlalchemy import (
     ForeignKey,
     CheckConstraint,
     Index,
-    PrimaryKeyConstraint,
-    func
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
 
@@ -118,15 +115,15 @@ class FloorPlan(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     survey_area_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("survey_areas.id", ondelete="RESTRICT"), nullable=False)
     storage_path: Mapped[str] = mapped_column(Text, nullable=False)
-    original_filename: Mapped[str] = mapped_column(Text, nullable=False)
-    width_px: Mapped[int] = mapped_column(Integer, nullable=False)
-    height_px: Mapped[int] = mapped_column(Integer, nullable=False)
+    original_filename: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    width_px: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    height_px: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     uploaded_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     __table_args__ = (
-        CheckConstraint("width_px > 0", name="ck_floor_plans_width_px"),
-        CheckConstraint("height_px > 0", name="ck_floor_plans_height_px"),
+        CheckConstraint("width_px IS NULL OR width_px > 0", name="ck_floor_plans_width_px"),
+        CheckConstraint("height_px IS NULL OR height_px > 0", name="ck_floor_plans_height_px"),
         Index("idx_floor_plans_survey_area_id", "survey_area_id"),
     )
 
@@ -152,7 +149,7 @@ class Survey(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     survey_area_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("survey_areas.id", ondelete="RESTRICT"), nullable=False)
-    title: Mapped[str] = mapped_column(Text, nullable=False)
+    title: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     mode: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False, default="in_progress")
     floor_plan_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("floor_plans.id", ondelete="RESTRICT"), nullable=True)
@@ -277,5 +274,6 @@ class WifiObservation(Base):
     __table_args__ = (
         CheckConstraint("frequency_mhz > 0", name="ck_wifi_observations_frequency_mhz"),
         Index("idx_wifi_observations_scan_cycle_id", "scan_cycle_id"),
+        Index("idx_wifi_observations_scan_cycle_id_bssid", "scan_cycle_id", "bssid"),
         Index("idx_wifi_observations_bssid", "bssid"),
     )

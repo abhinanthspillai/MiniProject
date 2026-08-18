@@ -15,8 +15,10 @@ import com.netraze.app.data.local.entity.WifiObservationEntity
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -88,85 +90,120 @@ class RoomDatabaseTest {
     }
 
     @Test
-    fun testScanAttemptAndUnboundScanCycle() = runBlocking {
-        val projectId = UUID.randomUUID()
-        val buildingId = UUID.randomUUID()
-        val floorId = UUID.randomUUID()
-        val areaId = UUID.randomUUID()
-        val userId = UUID.randomUUID()
-        val surveyId = UUID.randomUUID()
-
-        db.hierarchyDao().insertProjects(listOf(ProjectEntity(projectId, userId, "P", true, 1L, 1L)))
-        db.hierarchyDao().insertBuildings(listOf(BuildingEntity(buildingId, projectId, "B", 1L, 1L)))
-        db.hierarchyDao().insertFloors(listOf(FloorEntity(floorId, buildingId, "F", 1L, 1L)))
-        db.hierarchyDao().insertSurveyAreas(listOf(SurveyAreaEntity(areaId, floorId, "A", 1L, 1L)))
-
-        val survey = SurveyEntity(
-            id = surveyId, surveyAreaId = areaId, title = "Location Survey", mode = "location_survey",
-            status = "in_progress", floorPlanId = null, simpleMapId = null, createdBy = userId,
-            startedAt = 10L, completedAt = null, createdAt = 10L, updatedAt = 10L
-        )
-        db.surveyDao().insertSurvey(survey)
-
-        val attemptId = UUID.randomUUID()
-        val attempt = ScanAttemptEntity(
-            id = attemptId,
+    fun testFloorPlanSpatialPositionPersistence() = runBlocking {
+        val (surveyId, posId) = setupBaseSurvey()
+        val fpPos = SpatialPositionEntity(
+            id = posId,
             surveyId = surveyId,
-            spatialPositionId = null,
-            dispatchedAtWallclock = 100L,
-            status = "dispatched"
+            label = "Desk 4",
+            floorPlanX = 0.45,
+            floorPlanY = 0.72,
+            createdAt = 1000L
         )
-        db.scanAttemptDao().insertScanAttempt(attempt)
+        db.spatialPositionDao().insertSpatialPosition(fpPos)
 
-        val savedAttempt = db.scanAttemptDao().getScanAttemptById(attemptId)
-        assertNotNull(savedAttempt)
-        assertNull(savedAttempt?.spatialPositionId)
+        val saved = db.spatialPositionDao().getSpatialPositionById(posId)
+        assertNotNull(saved)
+        assertEquals(0.45, saved?.floorPlanX!!, 0.0001)
+        assertEquals(0.72, saved?.floorPlanY!!, 0.0001)
+        assertNull(saved?.simpleMapX)
+        assertNull(saved?.latitude)
+    }
 
+    @Test
+    fun testSimpleMapSpatialPositionPersistence() = runBlocking {
+        val (surveyId, posId) = setupBaseSurvey()
+        val smPos = SpatialPositionEntity(
+            id = posId,
+            surveyId = surveyId,
+            label = "Canvas Pin 1",
+            simpleMapX = 0.15,
+            simpleMapY = 0.85,
+            createdAt = 1000L
+        )
+        db.spatialPositionDao().insertSpatialPosition(smPos)
+
+        val saved = db.spatialPositionDao().getSpatialPositionById(posId)
+        assertNotNull(saved)
+        assertEquals(0.15, saved?.simpleMapX!!, 0.0001)
+        assertEquals(0.85, saved?.simpleMapY!!, 0.0001)
+        assertNull(saved?.floorPlanX)
+    }
+
+    @Test
+    fun testLocationSurveySpatialPositionWithAndWithoutFix() = runBlocking {
+        val (surveyId, posId1) = setupBaseSurvey()
+        val posId2 = UUID.randomUUID()
+
+        // Position without LocationFix
+        val posNoFix = SpatialPositionEntity(
+            id = posId1, surveyId = surveyId, label = "Outdoor P1", createdAt = 1000L
+        )
+        assertTrue(posNoFix.hasValidLocationFix())
+        db.spatialPositionDao().insertSpatialPosition(posNoFix)
+
+        // Complete LocationFix
+        val posWithFix = SpatialPositionEntity(
+            id = posId2, surveyId = surveyId, label = "Outdoor P2",
+            latitude = 12.9716, longitude = 77.5946, accuracyMeters = 3.2, capturedAt = 1005L,
+            createdAt = 1005L
+        )
+        assertTrue(posWithFix.hasValidLocationFix())
+        db.spatialPositionDao().insertSpatialPosition(posWithFix)
+
+        // Partial invalid fix
+        val posPartialFix = SpatialPositionEntity(
+            id = UUID.randomUUID(), surveyId = surveyId, label = "Invalid",
+            latitude = 12.9716, longitude = null, accuracyMeters = 3.2, capturedAt = 1005L,
+            createdAt = 1005L
+        )
+        assertFalse(posPartialFix.hasValidLocationFix())
+    }
+
+    @Test
+    fun testScanAttemptCorrelationAndMultipleAttemptsToOneCycle() = runBlocking {
+        val (surveyId, posId) = setupBaseSurvey()
+
+        val pos = SpatialPositionEntity(id = posId, surveyId = surveyId, label = "Point 1", createdAt = 10L)
+        db.spatialPositionDao().insertSpatialPosition(pos)
+
+        // Attempt 1 without correlated cycle yet
+        val attempt1Id = UUID.randomUUID()
+        val attempt1 = ScanAttemptEntity(
+            id = attempt1Id, surveyId = surveyId, spatialPositionId = posId,
+            correlatedScanCycleId = null, dispatchedAtWallclock = 100L, status = "dispatched"
+        )
+        db.scanAttemptDao().insertScanAttempt(attempt1)
+        assertNull(db.scanAttemptDao().getScanAttemptById(attempt1Id)?.correlatedScanCycleId)
+
+        // Cycle captured
         val cycleId = UUID.randomUUID()
         val cycle = ScanCycleEntity(
-            id = cycleId,
-            surveyId = surveyId,
-            spatialPositionId = null,
-            capturedAtWallclock = 105L,
-            androidScanTimestampRaw = 55555L,
-            freshResults = true,
-            createdAt = 105L
+            id = cycleId, surveyId = surveyId, spatialPositionId = posId,
+            capturedAtWallclock = 105L, androidScanTimestampRaw = 1000L, freshResults = true, createdAt = 105L
         )
+        db.scanCycleDao().insertScanCycle(cycle)
 
-        db.scanCycleDao().insertScanCycleWithObservations(cycle, emptyList())
+        // Correlate attempt 1
+        db.scanAttemptDao().updateScanAttemptCorrelation(attempt1Id, "completed", cycleId)
 
-        val savedCycle = db.scanCycleDao().getScanCycleById(cycleId)
-        assertNotNull(savedCycle)
-        assertNull(savedCycle?.spatialPositionId)
+        // Correlate attempt 2 to SAME cycle
+        val attempt2Id = UUID.randomUUID()
+        val attempt2 = ScanAttemptEntity(
+            id = attempt2Id, surveyId = surveyId, spatialPositionId = posId,
+            correlatedScanCycleId = cycleId, dispatchedAtWallclock = 102L, status = "completed"
+        )
+        db.scanAttemptDao().insertScanAttempt(attempt2)
 
-        val obs = db.wifiObservationDao().getObservationsForCycle(cycleId)
-        assertEquals(0, obs.size)
+        val attemptsForCycle = db.scanAttemptDao().getScanAttemptsForCycle(cycleId)
+        assertEquals(2, attemptsForCycle.size)
     }
 
     @Test
     fun testTransactionalScanCycleWithMultipleSameBssidObservations() = runBlocking {
-        val projectId = UUID.randomUUID()
-        val buildingId = UUID.randomUUID()
-        val floorId = UUID.randomUUID()
-        val areaId = UUID.randomUUID()
-        val userId = UUID.randomUUID()
-        val surveyId = UUID.randomUUID()
-        val posId = UUID.randomUUID()
-
-        db.hierarchyDao().insertProjects(listOf(ProjectEntity(projectId, userId, "P", true, 1L, 1L)))
-        db.hierarchyDao().insertBuildings(listOf(BuildingEntity(buildingId, projectId, "B", 1L, 1L)))
-        db.hierarchyDao().insertFloors(listOf(FloorEntity(floorId, buildingId, "F", 1L, 1L)))
-        db.hierarchyDao().insertSurveyAreas(listOf(SurveyAreaEntity(areaId, floorId, "A", 1L, 1L)))
-
-        val survey = SurveyEntity(
-            id = surveyId, surveyAreaId = areaId, title = "S", mode = "location_survey",
-            status = "in_progress", floorPlanId = null, simpleMapId = null, createdBy = userId,
-            startedAt = 10L, completedAt = null, createdAt = 10L, updatedAt = 10L
-        )
-        db.surveyDao().insertSurvey(survey)
-
-        val position = SpatialPositionEntity(posId, surveyId, "Point 1", 12L)
-        db.spatialPositionDao().insertSpatialPosition(position)
+        val (surveyId, posId) = setupBaseSurvey()
+        val pos = SpatialPositionEntity(id = posId, surveyId = surveyId, label = "Point 1", createdAt = 10L)
+        db.spatialPositionDao().insertSpatialPosition(pos)
 
         val cycleId = UUID.randomUUID()
         val cycle = ScanCycleEntity(
@@ -190,5 +227,28 @@ class RoomDatabaseTest {
         assertEquals(2, obsList.size)
         assertEquals(bssid, obsList[0].bssid)
         assertEquals(bssid, obsList[1].bssid)
+    }
+
+    private suspend fun setupBaseSurvey(): Pair<UUID, UUID> {
+        val projectId = UUID.randomUUID()
+        val buildingId = UUID.randomUUID()
+        val floorId = UUID.randomUUID()
+        val areaId = UUID.randomUUID()
+        val userId = UUID.randomUUID()
+        val surveyId = UUID.randomUUID()
+        val posId = UUID.randomUUID()
+
+        db.hierarchyDao().insertProjects(listOf(ProjectEntity(projectId, userId, "P", true, 1L, 1L)))
+        db.hierarchyDao().insertBuildings(listOf(BuildingEntity(buildingId, projectId, "B", 1L, 1L)))
+        db.hierarchyDao().insertFloors(listOf(FloorEntity(floorId, buildingId, "F", 1L, 1L)))
+        db.hierarchyDao().insertSurveyAreas(listOf(SurveyAreaEntity(areaId, floorId, "A", 1L, 1L)))
+
+        val survey = SurveyEntity(
+            id = surveyId, surveyAreaId = areaId, title = "S", mode = "location_survey",
+            status = "in_progress", floorPlanId = null, simpleMapId = null, createdBy = userId,
+            startedAt = 10L, completedAt = null, createdAt = 10L, updatedAt = 10L
+        )
+        db.surveyDao().insertSurvey(survey)
+        return Pair(surveyId, posId)
     }
 }
