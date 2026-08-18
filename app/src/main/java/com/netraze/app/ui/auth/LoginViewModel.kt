@@ -2,7 +2,10 @@ package com.netraze.app.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.netraze.app.data.remote.api.AuthApi
+import com.netraze.app.data.remote.dto.UserDto
 import com.netraze.app.data.repository.AuthRepository
+import com.netraze.app.data.security.AuthSession
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,13 +14,59 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class AuthenticatedState(
+    val isAuthenticated: Boolean = false,
+    val session: AuthSession? = null,
+    val userProfile: UserDto? = null,
+    val isFetchingProfile: Boolean = false,
+    val profileError: String? = null
+)
+
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val authApi: AuthApi
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
+
+    private val _authState = MutableStateFlow(AuthenticatedState())
+    val authState: StateFlow<AuthenticatedState> = _authState.asStateFlow()
+
+    init {
+        checkSessionRestoration()
+    }
+
+    fun checkSessionRestoration() {
+        viewModelScope.launch {
+            val session = authRepository.getCurrentSession()
+            if (session != null && session.accessToken.isNotBlank()) {
+                _authState.update {
+                    it.copy(isAuthenticated = true, session = session)
+                }
+                fetchUserProfile()
+            } else {
+                _authState.update { AuthenticatedState(isAuthenticated = false) }
+            }
+        }
+    }
+
+    fun fetchUserProfile() {
+        _authState.update { it.copy(isFetchingProfile = true, profileError = null) }
+        viewModelScope.launch {
+            try {
+                val profile = authApi.getMe()
+                _authState.update {
+                    it.copy(userProfile = profile, isFetchingProfile = false)
+                }
+            } catch (e: Exception) {
+                _authState.update {
+                    it.copy(isFetchingProfile = false, profileError = e.message ?: "Failed to fetch user profile")
+                }
+            }
+        }
+    }
 
     fun onIdentityChanged(identity: String) {
         _uiState.update { it.copy(identity = identity, errorMessage = null) }
@@ -47,12 +96,26 @@ class LoginViewModel @Inject constructor(
 
         viewModelScope.launch {
             val result = authRepository.login(currentState.identity, currentState.password)
-            result.onSuccess {
+            result.onSuccess { user ->
+                val session = authRepository.getCurrentSession()
                 _uiState.update { state -> state.copy(isLoading = false, errorMessage = null) }
+                _authState.update {
+                    it.copy(isAuthenticated = true, session = session, userProfile = user)
+                }
                 onLoginSuccess()
             }.onFailure { exception ->
-                _uiState.update { state -> state.copy(isLoading = false, errorMessage = exception.message ?: "Authentication failed") }
+                _uiState.update { state ->
+                    state.copy(isLoading = false, errorMessage = exception.message ?: "Authentication failed")
+                }
             }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            authRepository.logout()
+            _authState.update { AuthenticatedState(isAuthenticated = false) }
+            _uiState.update { LoginUiState() }
         }
     }
 }

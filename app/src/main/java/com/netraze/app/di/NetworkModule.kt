@@ -20,8 +20,8 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    // Base URL defaults to local host for Android emulator or device backend connection
-    private const val BASE_URL = "http://10.0.2.2:8000/"
+    // 127.0.0.1 connects to PC local server via adb reverse tcp:8000 tcp:8000 on physical USB device
+    private const val BASE_URL = "http://127.0.0.1:8000/"
 
     @Provides
     @Singleton

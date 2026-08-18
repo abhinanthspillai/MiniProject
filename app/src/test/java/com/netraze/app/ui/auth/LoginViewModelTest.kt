@@ -1,5 +1,8 @@
 package com.netraze.app.ui.auth
 
+import com.netraze.app.data.remote.api.AuthApi
+import com.netraze.app.data.remote.dto.LoginRequestDto
+import com.netraze.app.data.remote.dto.LoginResponseDto
 import com.netraze.app.data.remote.dto.UserDto
 import com.netraze.app.data.repository.AuthRepository
 import com.netraze.app.data.security.AuthSession
@@ -23,13 +26,15 @@ class LoginViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeAuthRepository: FakeAuthRepository
+    private lateinit var fakeAuthApi: FakeAuthApi
     private lateinit var viewModel: LoginViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeAuthRepository = FakeAuthRepository()
-        viewModel = LoginViewModel(fakeAuthRepository)
+        fakeAuthApi = FakeAuthApi()
+        viewModel = LoginViewModel(fakeAuthRepository, fakeAuthApi)
     }
 
     @After
@@ -65,6 +70,7 @@ class LoginViewModelTest {
         assertTrue(loginSuccessCalled)
         assertFalse(viewModel.uiState.value.isLoading)
         assertNull(viewModel.uiState.value.errorMessage)
+        assertTrue(viewModel.authState.value.isAuthenticated)
     }
 
     @Test
@@ -80,21 +86,39 @@ class LoginViewModelTest {
 
         assertFalse(viewModel.uiState.value.isLoading)
         assertEquals("Invalid email address or password", viewModel.uiState.value.errorMessage)
+        assertFalse(viewModel.authState.value.isAuthenticated)
     }
 
     private class FakeAuthRepository : AuthRepository {
         var shouldReturnError = false
+        private var currentSession: AuthSession? = null
 
         override suspend fun login(email: String, password: String): Result<UserDto> {
             return if (shouldReturnError) {
                 Result.failure(Exception("Invalid email address or password"))
             } else {
-                Result.success(UserDto(id = UUID.randomUUID(), email = email, role = "survey_technician"))
+                val userId = UUID.randomUUID()
+                currentSession = AuthSession("token_123", userId, email, "survey_technician")
+                Result.success(UserDto(id = userId, email = email, role = "survey_technician"))
             }
         }
 
-        override suspend fun logout() {}
-        override suspend fun hasActiveSession(): Boolean = false
-        override suspend fun getCurrentSession(): AuthSession? = null
+        override suspend fun logout() {
+            currentSession = null
+        }
+
+        override suspend fun hasActiveSession(): Boolean = currentSession != null
+        override suspend fun getCurrentSession(): AuthSession? = currentSession
+    }
+
+    private class FakeAuthApi : AuthApi {
+        override suspend fun login(request: LoginRequestDto): LoginResponseDto {
+            val userId = UUID.randomUUID()
+            return LoginResponseDto("token_123", "bearer", UserDto(userId, request.email, "survey_technician"))
+        }
+
+        override suspend fun getMe(): UserDto {
+            return UserDto(UUID.randomUUID(), "tech@netraze.app", "survey_technician")
+        }
     }
 }

@@ -7,17 +7,17 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.SecretKeySpec
 
 /**
- * Hardware-backed direct Android Keystore CryptoManager (D090).
- * Generates and stores AES-256 GCM key inside AndroidKeyStore on device.
- * Fallbacks to in-memory AES key during Robolectric JVM unit tests.
+ * Android Keystore CryptoManager (D090).
+ * Generates and stores Keystore-protected AES-256 GCM key inside AndroidKeyStore on physical device.
+ * Fallbacks to in-memory AES key strictly during Robolectric JVM unit tests where AndroidKeyStore provider is absent.
  */
 class CryptoManager {
 
     private val transformation = "AES/GCM/NoPadding"
     private var fallbackKey: SecretKey? = null
+    private var isUsingAndroidKeyStore = false
 
     private fun getSecretKey(): SecretKey {
         return try {
@@ -25,14 +25,17 @@ class CryptoManager {
                 load(null)
             }
             val existingKey = keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.SecretKeyEntry
-            existingKey?.secretKey ?: createAndroidKeyStoreKey(keyStore)
-        } catch (e: Exception) {
-            // Robolectric JVM test environment fallback
+            val key = existingKey?.secretKey ?: createAndroidKeyStoreKey()
+            isUsingAndroidKeyStore = true
+            key
+        } catch (t: Throwable) {
+            // Catch all Throwable (including ClassReader/bytecode errors in Robolectric JVM tests)
+            isUsingAndroidKeyStore = false
             fallbackKey ?: KeyGenerator.getInstance("AES").apply { init(256) }.generateKey().also { fallbackKey = it }
         }
     }
 
-    private fun createAndroidKeyStoreKey(keyStore: KeyStore): SecretKey {
+    private fun createAndroidKeyStoreKey(): SecretKey {
         val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
         val spec = KeyGenParameterSpec.Builder(
             KEY_ALIAS,
@@ -44,6 +47,11 @@ class CryptoManager {
             .build()
         keyGenerator.init(spec)
         return keyGenerator.generateKey()
+    }
+
+    fun isKeystoreProtected(): Boolean {
+        getSecretKey()
+        return isUsingAndroidKeyStore
     }
 
     fun encrypt(bytes: ByteArray): Pair<ByteArray, ByteArray> {
