@@ -1,0 +1,37 @@
+from app.core.database import Base
+from app.models.domain import (
+    User,
+    ProjectMember,
+    Project,
+    Building,
+    Floor,
+    SurveyArea,
+    FloorPlan,
+    SimpleMap,
+    Survey,
+    SpatialPosition,
+    FloorPlanPosition,
+    SimpleMapPosition,
+    LocationFix,
+    ScanCycle,
+    WifiObservation,
+)
+
+__all__ = [
+    "Base",
+    "User",
+    "ProjectMember",
+    "Project",
+    "Building",
+    "Floor",
+    "SurveyArea",
+    "FloorPlan",
+    "SimpleMap",
+    "Survey",
+    "SpatialPosition",
+    "FloorPlanPosition",
+    "SimpleMapPosition",
+    "LocationFix",
+    "ScanCycle",
+    "WifiObservation",
+]
