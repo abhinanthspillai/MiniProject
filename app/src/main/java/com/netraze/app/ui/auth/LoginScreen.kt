@@ -9,19 +9,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +44,7 @@ fun LoginRoute(
     viewModel: LoginViewModel,
     modifier: Modifier = Modifier,
     onCreateUserClick: () -> Unit = {},
+    onForgotPasswordClick: () -> Unit = {},
     onLoginSubmitted: (identity: String, password: String) -> Unit = { _, _ -> }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -65,6 +60,7 @@ fun LoginRoute(
             }
         },
         onCreateUserClick = onCreateUserClick,
+        onForgotPasswordClick = onForgotPasswordClick,
         modifier = modifier
     )
 }
@@ -77,10 +73,9 @@ fun LoginScreen(
     onTogglePasswordVisibility: () -> Unit,
     onSubmit: () -> Unit,
     onCreateUserClick: () -> Unit = {},
+    onForgotPasswordClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var showForgotPasswordDialog by remember { mutableStateOf(false) }
-
     Surface(
         modifier = modifier.fillMaxSize(),
         color = SurfaceLight
@@ -91,25 +86,25 @@ fun LoginScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Upper Branding Area (~35-40% height)
+            // Upper Branding Section
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = Spacing.lg)
-                    .padding(top = 40.dp, bottom = 32.dp),
+                    .padding(top = 28.dp, bottom = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 NetrazeLogo(
-                    size = 72.dp,
+                    size = 64.dp,
                     containerColor = PrimaryBlue,
                     iconColor = Color.White
                 )
 
-                Spacer(modifier = Modifier.height(Spacing.md))
+                Spacer(modifier = Modifier.height(Spacing.sm))
 
                 Text(
                     text = "Netraze",
-                    style = NetrazeTypography.displaySmall,
+                    style = NetrazeTypography.headlineLarge,
                     color = TextPrimary,
                     fontWeight = FontWeight.ExtraBold,
                     textAlign = TextAlign.Center
@@ -119,7 +114,7 @@ fun LoginScreen(
 
                 Text(
                     text = "Indoor Wi-Fi Survey & Analysis",
-                    style = NetrazeTypography.titleMedium,
+                    style = NetrazeTypography.bodyMedium,
                     color = TextSecondary,
                     textAlign = TextAlign.Center
                 )
@@ -129,19 +124,18 @@ fun LoginScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f, fill = true)
                     .clip(TopSheetShape)
                     .background(FormSurfaceBlue)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = Spacing.xl, vertical = 32.dp),
+                        .padding(horizontal = Spacing.xl, vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "Welcome Back",
-                        style = NetrazeTypography.headlineMedium,
+                        style = NetrazeTypography.headlineSmall,
                         color = TextOnBlue,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.fillMaxWidth()
@@ -151,12 +145,12 @@ fun LoginScreen(
 
                     Text(
                         text = "Sign in to continue your Wi-Fi survey work.",
-                        style = NetrazeTypography.bodyMedium,
+                        style = NetrazeTypography.bodySmall,
                         color = TextOnBlueSecondary,
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(Spacing.xl))
+                    Spacer(modifier = Modifier.height(Spacing.lg))
 
                     LoginForm(
                         identity = uiState.identity,
@@ -171,9 +165,9 @@ fun LoginScreen(
                         isLoginEnabled = uiState.isLoginEnabled
                     )
 
-                    Spacer(modifier = Modifier.height(Spacing.sm))
+                    Spacer(modifier = Modifier.height(Spacing.xs))
 
-                    TextButton(onClick = { showForgotPasswordDialog = true }) {
+                    TextButton(onClick = onForgotPasswordClick) {
                         Text(
                             text = "Forgot Password?",
                             style = NetrazeTypography.bodyMedium,
@@ -182,7 +176,7 @@ fun LoginScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(Spacing.md))
+                    Spacer(modifier = Modifier.height(Spacing.xs))
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically
@@ -204,19 +198,6 @@ fun LoginScreen(
                 }
             }
         }
-
-        if (showForgotPasswordDialog) {
-            AlertDialog(
-                onDismissRequest = { showForgotPasswordDialog = false },
-                title = { Text("Forgot Password", style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold) },
-                text = { Text("Contact your Netraze Administrator to reset your password.", style = NetrazeTypography.bodyMedium) },
-                confirmButton = {
-                    TextButton(onClick = { showForgotPasswordDialog = false }) {
-                        Text("OK", color = PrimaryBlue, fontWeight = FontWeight.Bold)
-                    }
-                }
-            )
-        }
     }
 }
 
@@ -230,7 +211,8 @@ fun LoginScreenDefaultPreview() {
             onPasswordChanged = {},
             onTogglePasswordVisibility = {},
             onSubmit = {},
-            onCreateUserClick = {}
+            onCreateUserClick = {},
+            onForgotPasswordClick = {}
         )
     }
 }

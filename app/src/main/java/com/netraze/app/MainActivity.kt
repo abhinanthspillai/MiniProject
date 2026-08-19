@@ -40,6 +40,7 @@ import com.netraze.app.ui.account.AccountScreen
 import com.netraze.app.ui.auth.CreateUserScreen
 import com.netraze.app.ui.auth.LoginRoute
 import com.netraze.app.ui.auth.LoginViewModel
+import com.netraze.app.ui.auth.ResetPasswordScreen
 import com.netraze.app.ui.canvas.SurveyCanvasScreen
 import com.netraze.app.ui.canvas.SurveyCanvasViewModel
 import com.netraze.app.ui.dashboard.DashboardHomeScreen
@@ -125,6 +126,7 @@ class MainActivity : ComponentActivity() {
                     var currentScreen by remember { mutableStateOf<ScreenState>(ScreenState.Dashboard) }
                     var showLocationSelector by remember { mutableStateOf(false) }
                     var isCreateUserFlowActive by remember { mutableStateOf(false) }
+                    var isResetPasswordFlowActive by remember { mutableStateOf(false) }
 
                     if (authState.isAuthenticated) {
                         val email = authState.userProfile?.email ?: authState.session?.email ?: "Unknown"
@@ -338,11 +340,21 @@ class MainActivity : ComponentActivity() {
                                 isCreateUserFlowActive = false
                             }
                         )
+                    } else if (isResetPasswordFlowActive) {
+                        ResetPasswordScreen(
+                            viewModel = loginViewModel,
+                            onBackToLogin = {
+                                isResetPasswordFlowActive = false
+                            }
+                        )
                     } else {
                         LoginRoute(
                             viewModel = loginViewModel,
                             onCreateUserClick = {
                                 isCreateUserFlowActive = true
+                            },
+                            onForgotPasswordClick = {
+                                isResetPasswordFlowActive = true
                             },
                             onLoginSubmitted = { _, _ -> }
                         )

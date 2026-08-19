@@ -36,6 +36,20 @@ data class CreateUserUiState(
     val successMessage: String? = null
 )
 
+data class ResetPasswordUiState(
+    val adminEmail: String = "",
+    val adminPassword: String = "",
+    val isAdminVerified: Boolean = false,
+    val adminToken: String? = null,
+    val targetUserEmail: String = "",
+    val newPassword: String = "",
+    val confirmNewPassword: String = "",
+    val isVerifyingAdmin: Boolean = false,
+    val isResettingPassword: Boolean = false,
+    val error: String? = null,
+    val successMessage: String? = null
+)
+
 class LoginViewModel @Inject constructor(
     private var authRepository: AuthRepository?,
     private var authApi: AuthApi?
@@ -51,6 +65,9 @@ class LoginViewModel @Inject constructor(
 
     private val _createUserState = MutableStateFlow(CreateUserUiState())
     val createUserState: StateFlow<CreateUserUiState> = _createUserState.asStateFlow()
+
+    private val _resetPasswordState = MutableStateFlow(ResetPasswordUiState())
+    val resetPasswordState: StateFlow<ResetPasswordUiState> = _resetPasswordState.asStateFlow()
 
     init {
         checkSessionRestoration()
@@ -230,7 +247,6 @@ class LoginViewModel @Inject constructor(
                         successMessage = "Account created. ${createdUser.email} can now sign in to Netraze."
                     )
                 }
-                // Pre-fill email in login identity field safely
                 _uiState.update { it.copy(identity = createdUser.email, password = "") }
                 onSuccess(createdUser.email)
             }.onFailure { exception ->
@@ -269,6 +285,118 @@ class LoginViewModel @Inject constructor(
         _createUserState.update { CreateUserUiState() }
     }
 
+    fun verifyAdminCredentialsForReset(onSuccess: () -> Unit = {}) {
+        val repository = authRepository ?: return
+        val adminEmail = _resetPasswordState.value.adminEmail.trim()
+        val adminPass = _resetPasswordState.value.adminPassword
+
+        if (adminEmail.isBlank() || adminPass.isBlank()) {
+            _resetPasswordState.update { it.copy(error = "Enter Administrator email and password.") }
+            return
+        }
+
+        _resetPasswordState.update { it.copy(isVerifyingAdmin = true, error = null) }
+
+        viewModelScope.launch {
+            val result = repository.verifyAdmin(adminEmail, adminPass)
+            result.onSuccess { token ->
+                _resetPasswordState.update {
+                    it.copy(
+                        isVerifyingAdmin = false,
+                        isAdminVerified = true,
+                        adminToken = token,
+                        error = null
+                    )
+                }
+                onSuccess()
+            }.onFailure { exception ->
+                _resetPasswordState.update {
+                    it.copy(
+                        isVerifyingAdmin = false,
+                        isAdminVerified = false,
+                        adminToken = null,
+                        error = exception.message ?: "Administrator verification failed."
+                    )
+                }
+            }
+        }
+    }
+
+    fun submitResetPassword(onSuccess: (String) -> Unit = {}) {
+        val repository = authRepository ?: return
+        val state = _resetPasswordState.value
+        val adminToken = state.adminToken
+
+        if (!state.isAdminVerified || adminToken.isNullOrBlank()) {
+            _resetPasswordState.update { it.copy(error = "Administrator verification required before password reset.") }
+            return
+        }
+
+        val targetEmail = state.targetUserEmail.trim()
+        val newPassword = state.newPassword
+        val confirmNewPassword = state.confirmNewPassword
+
+        if (targetEmail.isBlank()) {
+            _resetPasswordState.update { it.copy(error = "Enter user email address.") }
+            return
+        }
+
+        if (newPassword.isBlank()) {
+            _resetPasswordState.update { it.copy(error = "Enter new password.") }
+            return
+        }
+
+        if (newPassword != confirmNewPassword) {
+            _resetPasswordState.update { it.copy(error = "Passwords do not match.") }
+            return
+        }
+
+        _resetPasswordState.update { it.copy(isResettingPassword = true, error = null) }
+
+        viewModelScope.launch {
+            val result = repository.resetPassword(adminToken, targetEmail, newPassword)
+            result.onSuccess { msg ->
+                _resetPasswordState.update {
+                    ResetPasswordUiState(
+                        successMessage = "Password reset successfully. $targetEmail can now sign in with the new password."
+                    )
+                }
+                _uiState.update { it.copy(identity = targetEmail, password = "") }
+                onSuccess(targetEmail)
+            }.onFailure { exception ->
+                _resetPasswordState.update {
+                    it.copy(
+                        isResettingPassword = false,
+                        error = exception.message ?: "Failed to reset password."
+                    )
+                }
+            }
+        }
+    }
+
+    fun updateResetPasswordForm(
+        adminEmail: String = _resetPasswordState.value.adminEmail,
+        adminPassword: String = _resetPasswordState.value.adminPassword,
+        targetUserEmail: String = _resetPasswordState.value.targetUserEmail,
+        newPassword: String = _resetPasswordState.value.newPassword,
+        confirmNewPassword: String = _resetPasswordState.value.confirmNewPassword
+    ) {
+        _resetPasswordState.update {
+            it.copy(
+                adminEmail = adminEmail,
+                adminPassword = adminPassword,
+                targetUserEmail = targetUserEmail,
+                newPassword = newPassword,
+                confirmNewPassword = confirmNewPassword,
+                error = null
+            )
+        }
+    }
+
+    fun resetResetPasswordState() {
+        _resetPasswordState.update { ResetPasswordUiState() }
+    }
+
     fun logout() {
         val repository = authRepository
         viewModelScope.launch {
@@ -276,6 +404,7 @@ class LoginViewModel @Inject constructor(
             _authState.update { AuthenticatedState(isAuthenticated = false) }
             _uiState.update { LoginUiState() }
             _createUserState.update { CreateUserUiState() }
+            _resetPasswordState.update { ResetPasswordUiState() }
         }
     }
 }

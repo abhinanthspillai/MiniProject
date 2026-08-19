@@ -34,3 +34,13 @@ class UserCreateRequest(BaseModel):
         if role_clean not in valid_roles:
             raise ValueError(f"Invalid role: '{v}'. Must be one of {valid_roles}")
         return role_clean
+
+
+class ResetPasswordRequest(BaseModel):
+    target_email: EmailStr
+    new_password: str
+
+
+class ResetPasswordResponse(BaseModel):
+    message: str
+    target_email: str

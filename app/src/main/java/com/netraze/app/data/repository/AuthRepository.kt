@@ -3,6 +3,7 @@ package com.netraze.app.data.repository
 import com.netraze.app.data.remote.api.AuthApi
 import com.netraze.app.data.remote.dto.CreateUserRequestDto
 import com.netraze.app.data.remote.dto.LoginRequestDto
+import com.netraze.app.data.remote.dto.ResetPasswordRequestDto
 import com.netraze.app.data.remote.dto.UserDto
 import com.netraze.app.data.security.AuthSession
 import com.netraze.app.data.security.SecureSessionStore
@@ -16,6 +17,7 @@ interface AuthRepository {
     suspend fun getCurrentSession(): AuthSession?
     suspend fun verifyAdmin(email: String, password: String): Result<String>
     suspend fun createUser(adminToken: String, email: String, password: String, role: String): Result<UserDto>
+    suspend fun resetPassword(adminToken: String, targetEmail: String, newPassword: String): Result<String>
 }
 
 class AuthRepositoryImpl(
@@ -102,6 +104,32 @@ class AuthRepositoryImpl(
             Result.failure(Exception("Unable to connect to Netraze. Check your connection and try again.", e))
         } catch (e: Exception) {
             Result.failure(Exception("Failed to create account.", e))
+        }
+    }
+
+    override suspend fun resetPassword(
+        adminToken: String,
+        targetEmail: String,
+        newPassword: String
+    ): Result<String> {
+        return try {
+            val authHeader = if (adminToken.startsWith("Bearer ")) adminToken else "Bearer $adminToken"
+            val response = authApi.resetPassword(
+                authorizationToken = authHeader,
+                request = ResetPasswordRequestDto(targetEmail = targetEmail.trim(), newPassword = newPassword)
+            )
+            Result.success(response.message)
+        } catch (e: HttpException) {
+            val errorMsg = when (e.code()) {
+                403 -> "Administrator authorization required to reset passwords."
+                404 -> "User with specified email address does not exist."
+                else -> "Failed to reset password (${e.code()})."
+            }
+            Result.failure(Exception(errorMsg, e))
+        } catch (e: IOException) {
+            Result.failure(Exception("Unable to connect to Netraze. Check your connection and try again.", e))
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to reset password.", e))
         }
     }
 }

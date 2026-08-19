@@ -25,3 +25,13 @@ data class CreateUserRequestDto(
     @SerializedName("password") val password: String,
     @SerializedName("role") val role: String
 )
+
+data class ResetPasswordRequestDto(
+    @SerializedName("target_email") val targetEmail: String,
+    @SerializedName("new_password") val newPassword: String
+)
+
+data class ResetPasswordResponseDto(
+    @SerializedName("message") val message: String,
+    @SerializedName("target_email") val targetEmail: String
+)

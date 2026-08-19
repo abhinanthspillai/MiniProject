@@ -6,7 +6,7 @@ from app.core.database import get_db
 from app.core.security import get_password_hash
 from app.dependencies.auth import get_current_user
 from app.models.domain import User
-from app.schemas.auth import UserCreateRequest, UserAuthProfile
+from app.schemas.auth import UserCreateRequest, UserAuthProfile, ResetPasswordRequest, ResetPasswordResponse
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -47,3 +47,36 @@ def create_user(
     db.refresh(new_user)
 
     return UserAuthProfile.model_validate(new_user)
+
+
+@router.post("/reset-password", response_model=ResetPasswordResponse, status_code=status.HTTP_200_OK)
+def reset_user_password(
+    request: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 1. Require verified Administrator authorization
+    if current_user.role != "administrator":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator authorization required to reset user passwords"
+        )
+
+    clean_email = request.target_email.lower().strip()
+
+    # 2. Find target user
+    target_user = db.execute(select(User).where(User.email == clean_email)).scalar_one_or_none()
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User with specified email address does not exist"
+        )
+
+    # 3. Update password with Argon2 hash
+    target_user.password_hash = get_password_hash(request.new_password)
+    db.commit()
+
+    return ResetPasswordResponse(
+        message="Password reset successfully.",
+        target_email=clean_email
+    )

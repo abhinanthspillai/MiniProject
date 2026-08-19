@@ -113,3 +113,54 @@ def test_create_user_invalid_role_rejected():
     }, headers=headers)
 
     assert res.status_code == 422
+
+
+def test_reset_password_succeeds_for_administrator():
+    data = setup_users_test_data()
+    headers = {"Authorization": f"Bearer {data['token_admin']}"}
+
+    res = client.post("/api/v1/users/reset-password", json={
+        "target_email": data["tech_email"],
+        "new_password": "NewTechPass123!"
+    }, headers=headers)
+
+    assert res.status_code == 200
+    assert res.json()["message"] == "Password reset successfully."
+
+    # Verify old password fails
+    old_login = client.post("/api/v1/auth/login", json={
+        "email": data["tech_email"],
+        "password": "TechPass123!"
+    })
+    assert old_login.status_code == 401
+
+    # Verify new password succeeds
+    new_login = client.post("/api/v1/auth/login", json={
+        "email": data["tech_email"],
+        "password": "NewTechPass123!"
+    })
+    assert new_login.status_code == 200
+
+
+def test_reset_password_fails_if_not_administrator():
+    data = setup_users_test_data()
+    headers = {"Authorization": f"Bearer {data['token_tech']}"}
+
+    res = client.post("/api/v1/users/reset-password", json={
+        "target_email": data["admin_email"],
+        "new_password": "HackedPass123!"
+    }, headers=headers)
+
+    assert res.status_code == 403
+
+
+def test_reset_password_fails_for_missing_user():
+    data = setup_users_test_data()
+    headers = {"Authorization": f"Bearer {data['token_admin']}"}
+
+    res = client.post("/api/v1/users/reset-password", json={
+        "target_email": "nonexistent@netraze.app",
+        "new_password": "SomePassword123!"
+    }, headers=headers)
+
+    assert res.status_code == 404
