@@ -137,6 +137,10 @@ class SurveyRepositoryTest {
             return surveysInCache.filter { it.surveyAreaId == surveyAreaId }
         }
 
+        override suspend fun getAllSurveys(): List<SurveyEntity> {
+            return surveysInCache.toList()
+        }
+
         override suspend fun updateSurveyCompletion(
             id: UUID,
             status: String,

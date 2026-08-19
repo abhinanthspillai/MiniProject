@@ -100,6 +100,7 @@ class SyncManagerTest {
         override suspend fun upsertSurveys(surveys: List<SurveyEntity>) { surveys.forEach { upsertSurvey(it) } }
         override suspend fun getSurveyById(id: UUID): SurveyEntity? = surveys[id]
         override suspend fun getSurveysForArea(surveyAreaId: UUID): List<SurveyEntity> = surveys.values.filter { it.surveyAreaId == surveyAreaId }
+        override suspend fun getAllSurveys(): List<SurveyEntity> = surveys.values.toList()
         override suspend fun updateSurveyCompletion(id: UUID, status: String, completedAt: Long, updatedAt: Long) {}
         override suspend fun updateSyncState(id: UUID, syncState: String) {
             surveys[id]?.let { surveys[id] = it.copy(syncState = syncState) }
