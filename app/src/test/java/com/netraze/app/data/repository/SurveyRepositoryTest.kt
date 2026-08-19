@@ -9,11 +9,13 @@ import com.netraze.app.data.remote.dto.UpdateSurveyRequestDto
 import com.netraze.app.data.security.AuthSession
 import com.netraze.app.data.security.SecureSessionStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.mockito.Mockito
 import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -21,15 +23,20 @@ class SurveyRepositoryTest {
 
     private lateinit var fakeApi: FakeSurveyApi
     private lateinit var fakeDao: FakeSurveyDao
-    private lateinit var fakeSessionStore: FakeSessionStore
+    private lateinit var mockSessionStore: SecureSessionStore
     private lateinit var repository: SurveyRepository
 
     @Before
     fun setUp() {
         fakeApi = FakeSurveyApi()
         fakeDao = FakeSurveyDao()
-        fakeSessionStore = FakeSessionStore()
-        repository = SurveyRepositoryImpl(fakeApi, fakeDao, fakeSessionStore)
+        mockSessionStore = Mockito.mock(SecureSessionStore::class.java)
+        runBlocking {
+            Mockito.`when`(mockSessionStore.getSession()).thenReturn(
+                AuthSession("fake_token", UUID.randomUUID(), "test@netraze.app", "survey_technician")
+            )
+        }
+        repository = SurveyRepositoryImpl(fakeApi, fakeDao, mockSessionStore)
     }
 
     @Test
@@ -153,14 +160,5 @@ class SurveyRepositoryTest {
         override suspend fun getPendingSurveys(): List<SurveyEntity> {
             return surveysInCache.filter { it.syncState == "pending" }
         }
-    }
-
-    private class FakeSessionStore : SecureSessionStore {
-        override suspend fun saveSession(session: AuthSession) {}
-        override suspend fun getSession(): AuthSession? = AuthSession("fake_token", UUID.randomUUID(), "test@netraze.app", "survey_technician")
-        override fun getSessionSync(): AuthSession? = getSessionSync()
-        override suspend fun clearSession() {}
-        override suspend fun hasActiveSession(): Boolean = true
-        override fun isKeystoreProtected(): Boolean = false
     }
 }
