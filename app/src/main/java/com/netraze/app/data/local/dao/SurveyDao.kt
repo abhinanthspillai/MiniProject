@@ -13,10 +13,16 @@ interface SurveyDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertSurvey(survey: SurveyEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSurvey(survey: SurveyEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSurveys(surveys: List<SurveyEntity>)
+
     @Query("SELECT * FROM surveys WHERE id = :id")
     suspend fun getSurveyById(id: UUID): SurveyEntity?
 
-    @Query("SELECT * FROM surveys WHERE surveyAreaId = :surveyAreaId")
+    @Query("SELECT * FROM surveys WHERE surveyAreaId = :surveyAreaId ORDER BY createdAt DESC")
     suspend fun getSurveysForArea(surveyAreaId: UUID): List<SurveyEntity>
 
     @Query("UPDATE surveys SET status = :status, completedAt = :completedAt, updatedAt = :updatedAt WHERE id = :id")

@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Apartment
-import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.LocationOn
@@ -25,13 +24,18 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,15 +52,121 @@ import com.netraze.app.data.local.entity.BuildingEntity
 import com.netraze.app.data.local.entity.FloorEntity
 import com.netraze.app.data.local.entity.ProjectEntity
 import com.netraze.app.data.local.entity.SurveyAreaEntity
-import com.netraze.app.ui.components.ErrorMessage
-import com.netraze.app.ui.components.PrimaryButton
 import com.netraze.app.ui.theme.FormSurfaceBlue
 import com.netraze.app.ui.theme.NetrazeTypography
 import com.netraze.app.ui.theme.PrimaryBlue
 import com.netraze.app.ui.theme.Spacing
+import com.netraze.app.ui.theme.SurfaceLight
 import com.netraze.app.ui.theme.TextOnBlue
 import com.netraze.app.ui.theme.TextSecondary
-import java.util.UUID
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HeaderBar(title: String, subtitle: String, onBackClick: () -> Unit) {
+    TopAppBar(
+        title = {
+            Column {
+                Text(text = title, style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(text = subtitle, style = NetrazeTypography.bodySmall, color = TextSecondary)
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = PrimaryBlue)
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
+    )
+}
+
+@Composable
+private fun HierarchyCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = FormSurfaceBlue)
+    ) {
+        Row(
+            modifier = Modifier.padding(Spacing.lg),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(imageVector = icon, contentDescription = title, tint = TextOnBlue)
+            Spacer(modifier = Modifier.width(Spacing.md))
+            Column {
+                Text(text = title, style = NetrazeTypography.titleMedium, color = TextOnBlue, fontWeight = FontWeight.Bold)
+                Text(text = subtitle, style = NetrazeTypography.bodySmall, color = TextOnBlue)
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyStateText(message: String) {
+    Text(
+        text = message,
+        style = NetrazeTypography.bodyMedium,
+        color = TextSecondary,
+        modifier = Modifier.padding(vertical = Spacing.xl)
+    )
+}
+
+@Composable
+private fun ErrorMessage(message: String) {
+    Text(
+        text = message,
+        style = NetrazeTypography.bodyMedium,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.padding(vertical = Spacing.sm)
+    )
+}
+
+@Composable
+private fun CreateEntityDialog(
+    title: String,
+    label: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = title, style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(label) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = PrimaryBlue,
+                    focusedLabelColor = PrimaryBlue
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (name.isNotBlank()) onConfirm(name.trim())
+                }
+            ) {
+                Text("Create", color = PrimaryBlue, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = TextSecondary)
+            }
+        }
+    )
+}
 
 @Composable
 fun ProjectsScreen(
@@ -71,16 +181,18 @@ fun ProjectsScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
 
+    val isAdministrator = (userRole == "administrator")
+
     LaunchedEffect(Unit) {
         viewModel.loadProjects()
     }
 
     Scaffold(
         topBar = {
-            HeaderBar(title = "Projects", onBackClick = onBackClick)
+            HeaderBar(title = "Projects", subtitle = "Netraze Hierarchy Root", onBackClick = onBackClick)
         },
         floatingActionButton = {
-            if (userRole == "administrator") {
+            if (isAdministrator) {
                 FloatingActionButton(
                     onClick = { showCreateDialog = true },
                     containerColor = PrimaryBlue
@@ -98,13 +210,15 @@ fun ProjectsScreen(
                 }
 
                 if (projects.isEmpty() && !isLoading) {
-                    EmptyStateText(message = "No authorized projects found.")
+                    EmptyStateText(message = "No projects found. Tap '+' to create a project.")
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         items(projects) { project ->
+                            val isOwner = (project.ownerId.toString() == currentUserId)
+                            val subtitle = if (isOwner) "Owner (Full Admin Access)" else "Member Access"
                             HierarchyCard(
                                 title = project.name,
-                                subtitle = if (project.ownerId.toString() == currentUserId) "Owner (Administrator)" else "Member",
+                                subtitle = subtitle,
                                 icon = Icons.Rounded.Folder,
                                 onClick = { onProjectClick(project) }
                             )
@@ -153,7 +267,7 @@ fun ProjectDetailScreen(
 
     Scaffold(
         topBar = {
-            HeaderBar(title = project.name, subtitle = "Buildings", onBackClick = onBackClick)
+            HeaderBar(title = project.name, subtitle = "Buildings Hierarchy", onBackClick = onBackClick)
         },
         floatingActionButton = {
             if (isOwnerAdmin) {
@@ -230,7 +344,7 @@ fun BuildingDetailScreen(
 
     Scaffold(
         topBar = {
-            HeaderBar(title = building.name, subtitle = "Floors", onBackClick = onBackClick)
+            HeaderBar(title = building.name, subtitle = "Floors Hierarchy", onBackClick = onBackClick)
         },
         floatingActionButton = {
             if (isOwnerAdmin) {
@@ -291,6 +405,7 @@ fun FloorDetailScreen(
     project: ProjectEntity,
     userRole: String,
     currentUserId: String,
+    onSurveyAreaClick: (SurveyAreaEntity) -> Unit,
     onBackClick: () -> Unit
 ) {
     val surveyAreas by viewModel.surveyAreas.collectAsStateWithLifecycle()
@@ -335,7 +450,7 @@ fun FloorDetailScreen(
                                 title = area.name,
                                 subtitle = "Survey Area Entity",
                                 icon = Icons.Rounded.LocationOn,
-                                onClick = {}
+                                onClick = { onSurveyAreaClick(area) }
                             )
                         }
                     }
@@ -349,7 +464,7 @@ fun FloorDetailScreen(
             if (showCreateDialog) {
                 CreateEntityDialog(
                     title = "Create New Survey Area",
-                    label = "Survey Area Name (e.g. Computer Lab, Office Wing)",
+                    label = "Area Name (e.g. Lab 305, East Wing)",
                     onDismiss = { showCreateDialog = false },
                     onConfirm = { name ->
                         viewModel.createSurveyArea(floor.id, name) { showCreateDialog = false }
@@ -358,120 +473,4 @@ fun FloorDetailScreen(
             }
         }
     }
-}
-
-// ==========================================
-// REUSABLE COMPONENTS
-// ==========================================
-
-@Composable
-private fun HeaderBar(
-    title: String,
-    subtitle: String? = null,
-    onBackClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(Spacing.md),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onBackClick) {
-            Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = PrimaryBlue)
-        }
-        Spacer(modifier = Modifier.width(Spacing.sm))
-        Column {
-            Text(
-                text = title,
-                style = NetrazeTypography.titleLarge,
-                color = PrimaryBlue,
-                fontWeight = FontWeight.Bold
-            )
-            if (!subtitle.isNullOrBlank()) {
-                Text(
-                    text = subtitle,
-                    style = NetrazeTypography.bodySmall,
-                    color = TextSecondary
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun HierarchyCard(
-    title: String,
-    subtitle: String,
-    icon: ImageVector,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = FormSurfaceBlue)
-    ) {
-        Row(
-            modifier = Modifier.padding(Spacing.lg),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(imageVector = icon, contentDescription = null, tint = PrimaryBlue)
-            Spacer(modifier = Modifier.width(Spacing.md))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, style = NetrazeTypography.titleMedium, color = TextOnBlue, fontWeight = FontWeight.Bold)
-                Text(text = subtitle, style = NetrazeTypography.bodySmall, color = TextOnBlue)
-            }
-            Icon(imageVector = Icons.Rounded.ChevronRight, contentDescription = null, tint = TextOnBlue)
-        }
-    }
-}
-
-@Composable
-private fun EmptyStateText(message: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = message, style = NetrazeTypography.bodyLarge, color = TextSecondary)
-    }
-}
-
-@Composable
-private fun CreateEntityDialog(
-    title: String,
-    label: String,
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    var text by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = title, style = NetrazeTypography.titleMedium, fontWeight = FontWeight.Bold) },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    label = { Text(label) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (text.isNotBlank()) {
-                        onConfirm(text.trim())
-                    }
-                },
-                enabled = text.isNotBlank()
-            ) {
-                Text("Create")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
 }

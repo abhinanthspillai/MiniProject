@@ -27,9 +27,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.netraze.app.data.local.entity.BuildingEntity
 import com.netraze.app.data.local.entity.FloorEntity
 import com.netraze.app.data.local.entity.ProjectEntity
+import com.netraze.app.data.local.entity.SurveyAreaEntity
 import com.netraze.app.data.remote.api.AuthApi
 import com.netraze.app.data.repository.AuthRepository
 import com.netraze.app.data.repository.HierarchyRepository
+import com.netraze.app.data.repository.SurveyRepository
 import com.netraze.app.data.security.SecureSessionStore
 import com.netraze.app.ui.auth.LoginRoute
 import com.netraze.app.ui.auth.LoginViewModel
@@ -39,6 +41,8 @@ import com.netraze.app.ui.hierarchy.FloorDetailScreen
 import com.netraze.app.ui.hierarchy.HierarchyViewModel
 import com.netraze.app.ui.hierarchy.ProjectDetailScreen
 import com.netraze.app.ui.hierarchy.ProjectsScreen
+import com.netraze.app.ui.survey.SurveyViewModel
+import com.netraze.app.ui.survey.SurveysScreen
 import com.netraze.app.ui.theme.FormSurfaceBlue
 import com.netraze.app.ui.theme.NetrazeTheme
 import com.netraze.app.ui.theme.NetrazeTypography
@@ -56,6 +60,7 @@ sealed class ScreenState {
     data class ProjectDetail(val project: ProjectEntity) : ScreenState()
     data class BuildingDetail(val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
     data class FloorDetail(val floor: FloorEntity, val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
+    data class Surveys(val surveyArea: SurveyAreaEntity, val floor: FloorEntity, val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
 }
 
 @AndroidEntryPoint
@@ -73,6 +78,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var hierarchyRepository: HierarchyRepository
 
+    @Inject
+    lateinit var surveyRepository: SurveyRepository
+
     private val loginViewModel: LoginViewModel by lazy {
         LoginViewModel(authRepository, authApi).apply {
             setDependencies(authRepository, authApi)
@@ -82,6 +90,12 @@ class MainActivity : ComponentActivity() {
     private val hierarchyViewModel: HierarchyViewModel by lazy {
         HierarchyViewModel(hierarchyRepository).apply {
             setRepository(hierarchyRepository)
+        }
+    }
+
+    private val surveyViewModel: SurveyViewModel by lazy {
+        SurveyViewModel(surveyRepository).apply {
+            setRepository(surveyRepository)
         }
     }
 
@@ -159,7 +173,21 @@ class MainActivity : ComponentActivity() {
                                     project = screen.project,
                                     userRole = role,
                                     currentUserId = userId,
+                                    onSurveyAreaClick = { area ->
+                                        currentScreen = ScreenState.Surveys(area, screen.floor, screen.building, screen.project)
+                                    },
                                     onBackClick = { currentScreen = ScreenState.BuildingDetail(screen.building, screen.project) }
+                                )
+                            }
+                            is ScreenState.Surveys -> {
+                                SurveysScreen(
+                                    viewModel = surveyViewModel,
+                                    surveyArea = screen.surveyArea,
+                                    project = screen.project,
+                                    userRole = role,
+                                    currentUserId = userId,
+                                    onSurveyClick = { _ -> },
+                                    onBackClick = { currentScreen = ScreenState.FloorDetail(screen.floor, screen.building, screen.project) }
                                 )
                             }
                         }
