@@ -3,6 +3,7 @@ package com.netraze.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +29,7 @@ import com.netraze.app.data.local.entity.BuildingEntity
 import com.netraze.app.data.local.entity.FloorEntity
 import com.netraze.app.data.local.entity.ProjectEntity
 import com.netraze.app.data.local.entity.SurveyAreaEntity
+import com.netraze.app.data.local.entity.SurveyEntity
 import com.netraze.app.data.remote.api.AuthApi
 import com.netraze.app.data.repository.AuthRepository
 import com.netraze.app.data.repository.HierarchyRepository
@@ -35,6 +37,8 @@ import com.netraze.app.data.repository.SurveyRepository
 import com.netraze.app.data.security.SecureSessionStore
 import com.netraze.app.ui.auth.LoginRoute
 import com.netraze.app.ui.auth.LoginViewModel
+import com.netraze.app.ui.canvas.SurveyCanvasScreen
+import com.netraze.app.ui.canvas.SurveyCanvasViewModel
 import com.netraze.app.ui.components.PrimaryButton
 import com.netraze.app.ui.hierarchy.BuildingDetailScreen
 import com.netraze.app.ui.hierarchy.FloorDetailScreen
@@ -61,6 +65,7 @@ sealed class ScreenState {
     data class BuildingDetail(val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
     data class FloorDetail(val floor: FloorEntity, val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
     data class Surveys(val surveyArea: SurveyAreaEntity, val floor: FloorEntity, val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
+    data class SurveyCanvas(val survey: SurveyEntity, val surveyArea: SurveyAreaEntity, val floor: FloorEntity, val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
 }
 
 @AndroidEntryPoint
@@ -80,6 +85,8 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var surveyRepository: SurveyRepository
+
+    private val surveyCanvasViewModel: SurveyCanvasViewModel by viewModels()
 
     private val loginViewModel: LoginViewModel by lazy {
         LoginViewModel(authRepository, authApi).apply {
@@ -186,8 +193,17 @@ class MainActivity : ComponentActivity() {
                                     project = screen.project,
                                     userRole = role,
                                     currentUserId = userId,
-                                    onSurveyClick = { _ -> },
+                                    onSurveyClick = { survey ->
+                                        currentScreen = ScreenState.SurveyCanvas(survey, screen.surveyArea, screen.floor, screen.building, screen.project)
+                                    },
                                     onBackClick = { currentScreen = ScreenState.FloorDetail(screen.floor, screen.building, screen.project) }
+                                )
+                            }
+                            is ScreenState.SurveyCanvas -> {
+                                SurveyCanvasScreen(
+                                    viewModel = surveyCanvasViewModel,
+                                    surveyId = screen.survey.id,
+                                    onBackClick = { currentScreen = ScreenState.Surveys(screen.surveyArea, screen.floor, screen.building, screen.project) }
                                 )
                             }
                         }
