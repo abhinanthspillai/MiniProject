@@ -139,10 +139,27 @@ def test_patch_survey_title_only_and_reject_prohibited_fields():
     assert res_patch.status_code == 200
     assert res_patch.json()["title"] == "Updated Title"
 
-    # Prohibited field status -> 422 Unprocessable Entity
-    res_prohibited_status = client.patch(f"/api/v1/surveys/{android_uuid}", json={"status": "completed"}, headers=headers)
-    assert res_prohibited_status.status_code == 422
+    # Prohibited fields -> 422 Unprocessable Entity
+    prohibited_payloads = [
+        {"status": "completed"},
+        {"completed_at": "2026-08-19T00:00:00Z"},
+        {"mode": "simple_map"},
+        {"floor_plan_id": str(uuid.uuid4())},
+        {"simple_map_id": str(uuid.uuid4())},
+        {"created_by": str(uuid.uuid4())},
+        {"id": str(uuid.uuid4())},
+        {"notes": "Illegal note"}
+    ]
 
-    # Prohibited field notes -> 422 Unprocessable Entity
-    res_prohibited_notes = client.patch(f"/api/v1/surveys/{android_uuid}", json={"notes": "Illegal note"}, headers=headers)
-    assert res_prohibited_notes.status_code == 422
+    for payload in prohibited_payloads:
+        res = client.patch(f"/api/v1/surveys/{android_uuid}", json=payload, headers=headers)
+        assert res.status_code == 422, f"Payload {payload} should be rejected with 422, got {res.status_code}"
+
+    # Verify survey metadata in DB remains unchanged except title
+    res_check = client.get(f"/api/v1/surveys/{android_uuid}", headers=headers)
+    assert res_check.status_code == 200
+    survey_data = res_check.json()
+    assert survey_data["title"] == "Updated Title"
+    assert survey_data["status"] == "in_progress"
+    assert survey_data["mode"] == "location_survey"
+    assert survey_data["completed_at"] is None
