@@ -3,14 +3,17 @@ package com.netraze.app.ui.auth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +49,7 @@ import com.netraze.app.ui.theme.TopSheetShape
 fun LoginRoute(
     viewModel: LoginViewModel,
     modifier: Modifier = Modifier,
+    onCreateUserClick: () -> Unit = {},
     onLoginSubmitted: (identity: String, password: String) -> Unit = { _, _ -> }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,6 +64,7 @@ fun LoginRoute(
                 onLoginSubmitted(uiState.identity, uiState.password)
             }
         },
+        onCreateUserClick = onCreateUserClick,
         modifier = modifier
     )
 }
@@ -71,6 +76,7 @@ fun LoginScreen(
     onPasswordChanged: (String) -> Unit,
     onTogglePasswordVisibility: () -> Unit,
     onSubmit: () -> Unit,
+    onCreateUserClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
@@ -85,7 +91,7 @@ fun LoginScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Upper Branding Section (~35-40% height)
+            // Upper Branding Area (~35-40% height)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -119,7 +125,7 @@ fun LoginScreen(
                 )
             }
 
-            // Lower Curved Blue Surface Container (Full width, extends to bottom)
+            // Lower Curved Blue Surface Container
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -134,7 +140,7 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Welcome Back!",
+                        text = "Welcome Back",
                         style = NetrazeTypography.headlineMedium,
                         color = TextOnBlue,
                         fontWeight = FontWeight.Bold,
@@ -144,7 +150,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(Spacing.xs))
 
                     Text(
-                        text = "Sign in to your account to continue",
+                        text = "Sign in to continue your Wi-Fi survey work.",
                         style = NetrazeTypography.bodyMedium,
                         color = TextOnBlueSecondary,
                         modifier = Modifier.fillMaxWidth()
@@ -165,7 +171,7 @@ fun LoginScreen(
                         isLoginEnabled = uiState.isLoginEnabled
                     )
 
-                    Spacer(modifier = Modifier.height(Spacing.md))
+                    Spacer(modifier = Modifier.height(Spacing.sm))
 
                     TextButton(onClick = { showForgotPasswordDialog = true }) {
                         Text(
@@ -175,6 +181,26 @@ fun LoginScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(Spacing.md))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "New user? ",
+                            style = NetrazeTypography.bodyMedium,
+                            color = TextOnBlueSecondary
+                        )
+                        TextButton(onClick = onCreateUserClick) {
+                            Text(
+                                text = "CREATE USER",
+                                style = NetrazeTypography.labelLarge,
+                                color = TextOnBlue,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -182,21 +208,17 @@ fun LoginScreen(
         if (showForgotPasswordDialog) {
             AlertDialog(
                 onDismissRequest = { showForgotPasswordDialog = false },
-                title = { Text("Forgot Password", fontWeight = FontWeight.Bold) },
-                text = { Text("Contact your Netraze Administrator to reset your password.") },
+                title = { Text("Forgot Password", style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold) },
+                text = { Text("Contact your Netraze Administrator to reset your password.", style = NetrazeTypography.bodyMedium) },
                 confirmButton = {
                     TextButton(onClick = { showForgotPasswordDialog = false }) {
-                        Text("OK")
+                        Text("OK", color = PrimaryBlue, fontWeight = FontWeight.Bold)
                     }
                 }
             )
         }
     }
 }
-
-// ==========================================
-// PREVIEWS FOR VARIOUS UI STATES
-// ==========================================
 
 @Preview(showBackground = true, name = "Default State", heightDp = 800)
 @Composable
@@ -207,61 +229,8 @@ fun LoginScreenDefaultPreview() {
             onIdentityChanged = {},
             onPasswordChanged = {},
             onTogglePasswordVisibility = {},
-            onSubmit = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Populated State", heightDp = 800)
-@Composable
-fun LoginScreenPopulatedPreview() {
-    NetrazeTheme {
-        LoginScreen(
-            uiState = LoginUiState(
-                identity = "technician@netraze.app",
-                password = "Password123",
-                isPasswordVisible = false
-            ),
-            onIdentityChanged = {},
-            onPasswordChanged = {},
-            onTogglePasswordVisibility = {},
-            onSubmit = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Loading State", heightDp = 800)
-@Composable
-fun LoginScreenLoadingPreview() {
-    NetrazeTheme {
-        LoginScreen(
-            uiState = LoginUiState(
-                identity = "technician@netraze.app",
-                password = "Password123",
-                isLoading = true
-            ),
-            onIdentityChanged = {},
-            onPasswordChanged = {},
-            onTogglePasswordVisibility = {},
-            onSubmit = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Invalid Credentials Error State", heightDp = 800)
-@Composable
-fun LoginScreenErrorPreview() {
-    NetrazeTheme {
-        LoginScreen(
-            uiState = LoginUiState(
-                identity = "technician@netraze.app",
-                password = "WrongPassword",
-                errorMessage = "Invalid email address or password. Please try again."
-            ),
-            onIdentityChanged = {},
-            onPasswordChanged = {},
-            onTogglePasswordVisibility = {},
-            onSubmit = {}
+            onSubmit = {},
+            onCreateUserClick = {}
         )
     }
 }

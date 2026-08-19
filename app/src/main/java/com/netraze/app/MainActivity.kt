@@ -37,6 +37,7 @@ import com.netraze.app.data.repository.HierarchyRepository
 import com.netraze.app.data.repository.SurveyRepository
 import com.netraze.app.data.security.SecureSessionStore
 import com.netraze.app.ui.account.AccountScreen
+import com.netraze.app.ui.auth.CreateUserScreen
 import com.netraze.app.ui.auth.LoginRoute
 import com.netraze.app.ui.auth.LoginViewModel
 import com.netraze.app.ui.canvas.SurveyCanvasScreen
@@ -123,6 +124,7 @@ class MainActivity : ComponentActivity() {
                     val surveysState by surveyViewModel.uiState.collectAsStateWithLifecycle()
                     var currentScreen by remember { mutableStateOf<ScreenState>(ScreenState.Dashboard) }
                     var showLocationSelector by remember { mutableStateOf(false) }
+                    var isCreateUserFlowActive by remember { mutableStateOf(false) }
 
                     if (authState.isAuthenticated) {
                         val email = authState.userProfile?.email ?: authState.session?.email ?: "Unknown"
@@ -329,9 +331,19 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
+                    } else if (isCreateUserFlowActive) {
+                        CreateUserScreen(
+                            viewModel = loginViewModel,
+                            onBackToLogin = {
+                                isCreateUserFlowActive = false
+                            }
+                        )
                     } else {
                         LoginRoute(
                             viewModel = loginViewModel,
+                            onCreateUserClick = {
+                                isCreateUserFlowActive = true
+                            },
                             onLoginSubmitted = { _, _ -> }
                         )
                     }

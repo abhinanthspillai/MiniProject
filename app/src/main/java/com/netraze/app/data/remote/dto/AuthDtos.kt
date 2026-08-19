@@ -19,3 +19,9 @@ data class LoginResponseDto(
     @SerializedName("token_type") val tokenType: String,
     @SerializedName("user") val user: UserDto
 )
+
+data class CreateUserRequestDto(
+    @SerializedName("email") val email: String,
+    @SerializedName("password") val password: String,
+    @SerializedName("role") val role: String
+)

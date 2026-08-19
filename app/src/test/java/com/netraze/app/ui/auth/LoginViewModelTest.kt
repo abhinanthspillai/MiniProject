@@ -1,6 +1,7 @@
 package com.netraze.app.ui.auth
 
 import com.netraze.app.data.remote.api.AuthApi
+import com.netraze.app.data.remote.dto.CreateUserRequestDto
 import com.netraze.app.data.remote.dto.LoginRequestDto
 import com.netraze.app.data.remote.dto.LoginResponseDto
 import com.netraze.app.data.remote.dto.UserDto
@@ -15,6 +16,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -85,8 +87,39 @@ class LoginViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.isLoading)
-        assertEquals("Invalid email address or password", viewModel.uiState.value.errorMessage)
+        assertEquals("Invalid email address or password.", viewModel.uiState.value.errorMessage)
         assertFalse(viewModel.authState.value.isAuthenticated)
+    }
+
+    @Test
+    fun testVerifyAdminAndCreateUserFlow() = runTest {
+        viewModel.updateCreateUserForm(
+            adminEmail = "admin@netraze.app",
+            adminPassword = "AdminPassword123"
+        )
+
+        viewModel.verifyAdminCredentials()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.createUserState.value.isAdminVerified)
+        assertNotNull(viewModel.createUserState.value.adminToken)
+
+        viewModel.updateCreateUserForm(
+            newUserEmail = "newtech@netraze.app",
+            newUserPassword = "Password123!",
+            newUserConfirmPassword = "Password123!",
+            newUserRole = "survey_technician"
+        )
+
+        var createdEmail: String? = null
+        viewModel.submitCreateUser { email ->
+            createdEmail = email
+        }
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("newtech@netraze.app", createdEmail)
+        assertEquals("newtech@netraze.app", viewModel.uiState.value.identity)
     }
 
     private class FakeAuthRepository : AuthRepository {
@@ -95,7 +128,7 @@ class LoginViewModelTest {
 
         override suspend fun login(email: String, password: String): Result<UserDto> {
             return if (shouldReturnError) {
-                Result.failure(Exception("Invalid email address or password"))
+                Result.failure(Exception("Invalid email address or password."))
             } else {
                 val userId = UUID.randomUUID()
                 currentSession = AuthSession("token_123", userId, email, "survey_technician")
@@ -109,6 +142,23 @@ class LoginViewModelTest {
 
         override suspend fun hasActiveSession(): Boolean = currentSession != null
         override suspend fun getCurrentSession(): AuthSession? = currentSession
+
+        override suspend fun verifyAdmin(email: String, password: String): Result<String> {
+            return if (shouldReturnError) {
+                Result.failure(Exception("Administrator verification failed."))
+            } else {
+                Result.success("admin_token_xyz")
+            }
+        }
+
+        override suspend fun createUser(
+            adminToken: String,
+            email: String,
+            password: String,
+            role: String
+        ): Result<UserDto> {
+            return Result.success(UserDto(id = UUID.randomUUID(), email = email, role = role))
+        }
     }
 
     private class FakeAuthApi : AuthApi {
@@ -119,6 +169,13 @@ class LoginViewModelTest {
 
         override suspend fun getMe(): UserDto {
             return UserDto(UUID.randomUUID(), "tech@netraze.app", "survey_technician")
+        }
+
+        override suspend fun createUser(
+            authorizationToken: String,
+            request: CreateUserRequestDto
+        ): UserDto {
+            return UserDto(UUID.randomUUID(), request.email, request.role)
         }
     }
 }
