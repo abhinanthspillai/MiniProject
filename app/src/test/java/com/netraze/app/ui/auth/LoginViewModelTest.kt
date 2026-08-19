@@ -4,6 +4,8 @@ import com.netraze.app.data.remote.api.AuthApi
 import com.netraze.app.data.remote.dto.CreateUserRequestDto
 import com.netraze.app.data.remote.dto.LoginRequestDto
 import com.netraze.app.data.remote.dto.LoginResponseDto
+import com.netraze.app.data.remote.dto.ResetPasswordRequestDto
+import com.netraze.app.data.remote.dto.ResetPasswordResponseDto
 import com.netraze.app.data.remote.dto.UserDto
 import com.netraze.app.data.repository.AuthRepository
 import com.netraze.app.data.security.AuthSession
@@ -122,6 +124,36 @@ class LoginViewModelTest {
         assertEquals("newtech@netraze.app", viewModel.uiState.value.identity)
     }
 
+    @Test
+    fun testResetPasswordFlow() = runTest {
+        viewModel.updateResetPasswordForm(
+            adminEmail = "admin@netraze.app",
+            adminPassword = "AdminPassword123"
+        )
+
+        viewModel.verifyAdminCredentialsForReset()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.resetPasswordState.value.isAdminVerified)
+        assertNotNull(viewModel.resetPasswordState.value.adminToken)
+
+        viewModel.updateResetPasswordForm(
+            targetUserEmail = "tech@netraze.app",
+            newPassword = "NewPassword123!",
+            confirmNewPassword = "NewPassword123!"
+        )
+
+        var resetTargetEmail: String? = null
+        viewModel.submitResetPassword { email ->
+            resetTargetEmail = email
+        }
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("tech@netraze.app", resetTargetEmail)
+        assertEquals("tech@netraze.app", viewModel.uiState.value.identity)
+    }
+
     private class FakeAuthRepository : AuthRepository {
         var shouldReturnError = false
         private var currentSession: AuthSession? = null
@@ -159,6 +191,14 @@ class LoginViewModelTest {
         ): Result<UserDto> {
             return Result.success(UserDto(id = UUID.randomUUID(), email = email, role = role))
         }
+
+        override suspend fun resetPassword(
+            adminToken: String,
+            targetEmail: String,
+            newPassword: String
+        ): Result<String> {
+            return Result.success("Password reset successfully.")
+        }
     }
 
     private class FakeAuthApi : AuthApi {
@@ -176,6 +216,13 @@ class LoginViewModelTest {
             request: CreateUserRequestDto
         ): UserDto {
             return UserDto(UUID.randomUUID(), request.email, request.role)
+        }
+
+        override suspend fun resetPassword(
+            authorizationToken: String,
+            request: ResetPasswordRequestDto
+        ): ResetPasswordResponseDto {
+            return ResetPasswordResponseDto("Password reset successfully.", request.targetEmail)
         }
     }
 }
