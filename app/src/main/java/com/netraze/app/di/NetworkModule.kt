@@ -1,6 +1,5 @@
 package com.netraze.app.di
 
-import android.content.Context
 import com.netraze.app.data.local.dao.HierarchyDao
 import com.netraze.app.data.local.dao.SurveyDao
 import com.netraze.app.data.remote.api.AuthApi
@@ -12,13 +11,10 @@ import com.netraze.app.data.repository.HierarchyRepository
 import com.netraze.app.data.repository.HierarchyRepositoryImpl
 import com.netraze.app.data.repository.SurveyRepository
 import com.netraze.app.data.repository.SurveyRepositoryImpl
-import com.netraze.app.data.security.AndroidKeystoreSessionCrypto
 import com.netraze.app.data.security.SecureSessionStore
-import com.netraze.app.data.security.sessionDataStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -34,13 +30,6 @@ object NetworkModule {
 
     // 127.0.0.1 connects to PC local server via adb reverse tcp:8000 tcp:8000 on physical USB device
     private const val BASE_URL = "http://127.0.0.1:8000/"
-
-    @Provides
-    @Singleton
-    fun provideSecureSessionStore(@ApplicationContext context: Context): SecureSessionStore {
-        val crypto = AndroidKeystoreSessionCrypto()
-        return SecureSessionStore(context.sessionDataStore, crypto)
-    }
 
     @Provides
     @Singleton
