@@ -24,7 +24,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
@@ -57,7 +56,6 @@ import com.netraze.app.ui.theme.SurfaceLight
 import com.netraze.app.ui.theme.TextOnBlue
 import com.netraze.app.ui.theme.TextSecondary
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HeaderBar(title: String, subtitle: String, onBackClick: () -> Unit) {
     TopAppBar(
@@ -132,9 +130,7 @@ fun SurveysScreen(
                 )
             }
         } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(Spacing.md)
-            ) {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 items(uiState.surveys) { survey ->
                     Card(
                         modifier = Modifier
@@ -177,9 +173,7 @@ fun SurveysScreen(
                     surveyAreaId = surveyArea.id,
                     title = title,
                     mode = mode,
-                    onSuccess = { newSurvey ->
-                        onSurveyClick(newSurvey)
-                    }
+                    onSuccess = { newSurvey -> onSurveyClick(newSurvey) }
                 )
             }
         )
@@ -207,44 +201,47 @@ fun CreateSurveyDialog(
                 )
 
                 Spacer(modifier = Modifier.height(Spacing.md))
-
                 Text(text = "Select Survey Mode", style = NetrazeTypography.labelLarge, color = TextSecondary)
-
                 Spacer(modifier = Modifier.height(Spacing.sm))
 
-                // Explanatory Mode Cards (Section 8)
                 SurveyModeCard(
                     title = "Floor Plan Mode",
-                    subtitle = "Use an existing floor plan to place survey points.",
+                    subtitle = "Requires an existing floor-plan artifact for this survey area.",
                     icon = Icons.Rounded.Map,
-                    isSelected = (selectedMode == "floor_plan"),
+                    isSelected = selectedMode == "floor_plan",
                     onClick = { selectedMode = "floor_plan" }
                 )
-
                 Spacer(modifier = Modifier.height(Spacing.xs))
-
                 SurveyModeCard(
                     title = "Simple Map Mode",
-                    subtitle = "Create approximate survey positions without a floor plan.",
+                    subtitle = "Requires an existing Simple Map artifact for this survey area.",
                     icon = Icons.Rounded.Navigation,
-                    isSelected = (selectedMode == "simple_map"),
+                    isSelected = selectedMode == "simple_map",
                     onClick = { selectedMode = "simple_map" }
                 )
-
                 Spacer(modifier = Modifier.height(Spacing.xs))
-
                 SurveyModeCard(
                     title = "Location Survey Mode",
-                    subtitle = "Capture flexible location-based survey points.",
+                    subtitle = "Ready for the emulator working model; no map artifact is required.",
                     icon = Icons.Rounded.Place,
-                    isSelected = (selectedMode == "location_survey"),
+                    isSelected = selectedMode == "location_survey",
                     onClick = { selectedMode = "location_survey" }
                 )
+
+                if (selectedMode != "location_survey") {
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                    Text(
+                        text = "This mode cannot be started from the emulator model until its required map artifact is selected. Choose Location Survey Mode for the current working flow.",
+                        style = NetrazeTypography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(title.trim(), selectedMode) }
+                onClick = { onConfirm(title.trim(), selectedMode) },
+                enabled = selectedMode == "location_survey"
             ) {
                 Text("Start Survey", color = PrimaryBlue, fontWeight = FontWeight.Bold)
             }
@@ -280,10 +277,7 @@ private fun SurveyModeCard(
             modifier = Modifier.padding(Spacing.sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RadioButton(
-                selected = isSelected,
-                onClick = onClick
-            )
+            RadioButton(selected = isSelected, onClick = onClick)
             Spacer(modifier = Modifier.width(Spacing.xs))
             Icon(imageVector = icon, contentDescription = title, tint = PrimaryBlue)
             Spacer(modifier = Modifier.width(Spacing.sm))
