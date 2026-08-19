@@ -19,7 +19,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +52,7 @@ import com.netraze.app.ui.hierarchy.LocationsTabScreen
 import com.netraze.app.ui.hierarchy.ProjectDetailScreen
 import com.netraze.app.ui.hierarchy.ProjectsScreen
 import com.netraze.app.ui.survey.AllSurveysTabScreen
+import com.netraze.app.ui.survey.CreateSurveyDialog
 import com.netraze.app.ui.survey.SurveyViewModel
 import com.netraze.app.ui.survey.SurveysScreen
 import com.netraze.app.ui.theme.NetrazeTheme
@@ -73,6 +74,13 @@ sealed class ScreenState {
     data class Surveys(val surveyArea: SurveyAreaEntity, val floor: FloorEntity, val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
     data class SurveyCanvas(val survey: SurveyEntity, val surveyArea: SurveyAreaEntity?, val floor: FloorEntity?, val building: BuildingEntity?, val project: ProjectEntity?) : ScreenState()
 }
+
+data class SurveyLocationContext(
+    val surveyArea: SurveyAreaEntity,
+    val floor: FloorEntity,
+    val building: BuildingEntity,
+    val project: ProjectEntity
+)
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -125,78 +133,91 @@ class MainActivity : ComponentActivity() {
                     val surveysState by surveyViewModel.uiState.collectAsStateWithLifecycle()
                     var currentScreen by remember { mutableStateOf<ScreenState>(ScreenState.Dashboard) }
                     var showLocationSelector by remember { mutableStateOf(false) }
+                    var pendingSurveyLocation by remember { mutableStateOf<SurveyLocationContext?>(null) }
+                    var showSurveyDetailsDialog by remember { mutableStateOf(false) }
                     var isCreateUserFlowActive by remember { mutableStateOf(false) }
                     var isResetPasswordFlowActive by remember { mutableStateOf(false) }
+
+                    LaunchedEffect(authState.isAuthenticated) {
+                        if (authState.isAuthenticated) {
+                            surveyViewModel.loadAllSurveys()
+                        } else {
+                            currentScreen = ScreenState.Dashboard
+                            showLocationSelector = false
+                            pendingSurveyLocation = null
+                            showSurveyDetailsDialog = false
+                        }
+                    }
 
                     if (authState.isAuthenticated) {
                         val email = authState.userProfile?.email ?: authState.session?.email ?: "Unknown"
                         val role = authState.userProfile?.role ?: authState.session?.role ?: "Unknown"
                         val userId = (authState.userProfile?.id ?: authState.session?.userId)?.toString() ?: "Unknown"
-
-                        val recentSurvey = surveysState.surveys.firstOrNull()
+                        val recentSurvey = surveysState.surveys.firstOrNull { it.status.equals("in_progress", ignoreCase = true) }
+                            ?: surveysState.surveys.firstOrNull()
+                        val isTopLevelScreen = currentScreen is ScreenState.Dashboard ||
+                            currentScreen is ScreenState.AllSurveys ||
+                            currentScreen is ScreenState.Locations ||
+                            currentScreen is ScreenState.Account
 
                         Scaffold(
                             bottomBar = {
-                                NavigationBar(
-                                    containerColor = SurfaceLight
-                                ) {
-                                    val isHome = currentScreen is ScreenState.Dashboard
-                                    val isAllSurveys = currentScreen is ScreenState.AllSurveys
-                                    val isLocations = currentScreen is ScreenState.Locations ||
-                                            currentScreen is ScreenState.Projects ||
-                                            currentScreen is ScreenState.ProjectDetail ||
-                                            currentScreen is ScreenState.BuildingDetail ||
-                                            currentScreen is ScreenState.FloorDetail
-                                    val isAccount = currentScreen is ScreenState.Account
+                                if (isTopLevelScreen) {
+                                    NavigationBar(containerColor = SurfaceLight) {
+                                        val isHome = currentScreen is ScreenState.Dashboard
+                                        val isAllSurveys = currentScreen is ScreenState.AllSurveys
+                                        val isLocations = currentScreen is ScreenState.Locations
+                                        val isAccount = currentScreen is ScreenState.Account
 
-                                    NavigationBarItem(
-                                        selected = isHome,
-                                        onClick = { currentScreen = ScreenState.Dashboard },
-                                        icon = { Icon(imageVector = Icons.Rounded.Home, contentDescription = "Home") },
-                                        label = { Text("Home") },
-                                        colors = NavigationBarItemDefaults.colors(
-                                            selectedIconColor = PrimaryBlue,
-                                            selectedTextColor = PrimaryBlue,
-                                            unselectedIconColor = TextSecondary,
-                                            unselectedTextColor = TextSecondary
+                                        NavigationBarItem(
+                                            selected = isHome,
+                                            onClick = { currentScreen = ScreenState.Dashboard },
+                                            icon = { Icon(imageVector = Icons.Rounded.Home, contentDescription = "Home") },
+                                            label = { Text("Home") },
+                                            colors = NavigationBarItemDefaults.colors(
+                                                selectedIconColor = PrimaryBlue,
+                                                selectedTextColor = PrimaryBlue,
+                                                unselectedIconColor = TextSecondary,
+                                                unselectedTextColor = TextSecondary
+                                            )
                                         )
-                                    )
-                                    NavigationBarItem(
-                                        selected = isAllSurveys,
-                                        onClick = { currentScreen = ScreenState.AllSurveys },
-                                        icon = { Icon(imageVector = Icons.Rounded.Assignment, contentDescription = "Surveys") },
-                                        label = { Text("Surveys") },
-                                        colors = NavigationBarItemDefaults.colors(
-                                            selectedIconColor = PrimaryBlue,
-                                            selectedTextColor = PrimaryBlue,
-                                            unselectedIconColor = TextSecondary,
-                                            unselectedTextColor = TextSecondary
+                                        NavigationBarItem(
+                                            selected = isAllSurveys,
+                                            onClick = { currentScreen = ScreenState.AllSurveys },
+                                            icon = { Icon(imageVector = Icons.Rounded.Assignment, contentDescription = "Surveys") },
+                                            label = { Text("Surveys") },
+                                            colors = NavigationBarItemDefaults.colors(
+                                                selectedIconColor = PrimaryBlue,
+                                                selectedTextColor = PrimaryBlue,
+                                                unselectedIconColor = TextSecondary,
+                                                unselectedTextColor = TextSecondary
+                                            )
                                         )
-                                    )
-                                    NavigationBarItem(
-                                        selected = isLocations,
-                                        onClick = { currentScreen = ScreenState.Locations },
-                                        icon = { Icon(imageVector = Icons.Rounded.LocationOn, contentDescription = "Locations") },
-                                        label = { Text("Locations") },
-                                        colors = NavigationBarItemDefaults.colors(
-                                            selectedIconColor = PrimaryBlue,
-                                            selectedTextColor = PrimaryBlue,
-                                            unselectedIconColor = TextSecondary,
-                                            unselectedTextColor = TextSecondary
+                                        NavigationBarItem(
+                                            selected = isLocations,
+                                            onClick = { currentScreen = ScreenState.Locations },
+                                            icon = { Icon(imageVector = Icons.Rounded.LocationOn, contentDescription = "Locations") },
+                                            label = { Text("Locations") },
+                                            colors = NavigationBarItemDefaults.colors(
+                                                selectedIconColor = PrimaryBlue,
+                                                selectedTextColor = PrimaryBlue,
+                                                unselectedIconColor = TextSecondary,
+                                                unselectedTextColor = TextSecondary
+                                            )
                                         )
-                                    )
-                                    NavigationBarItem(
-                                        selected = isAccount,
-                                        onClick = { currentScreen = ScreenState.Account },
-                                        icon = { Icon(imageVector = Icons.Rounded.Person, contentDescription = "Account") },
-                                        label = { Text("Account") },
-                                        colors = NavigationBarItemDefaults.colors(
-                                            selectedIconColor = PrimaryBlue,
-                                            selectedTextColor = PrimaryBlue,
-                                            unselectedIconColor = TextSecondary,
-                                            unselectedTextColor = TextSecondary
+                                        NavigationBarItem(
+                                            selected = isAccount,
+                                            onClick = { currentScreen = ScreenState.Account },
+                                            icon = { Icon(imageVector = Icons.Rounded.Person, contentDescription = "Account") },
+                                            label = { Text("Account") },
+                                            colors = NavigationBarItemDefaults.colors(
+                                                selectedIconColor = PrimaryBlue,
+                                                selectedTextColor = PrimaryBlue,
+                                                unselectedIconColor = TextSecondary,
+                                                unselectedTextColor = TextSecondary
+                                            )
                                         )
-                                    )
+                                    }
                                 }
                             }
                         ) { paddingValues ->
@@ -238,10 +259,7 @@ class MainActivity : ComponentActivity() {
                                         AccountScreen(
                                             email = email,
                                             role = role,
-                                            onSignOut = {
-                                                currentScreen = ScreenState.Dashboard
-                                                loginViewModel.logout()
-                                            }
+                                            onSignOut = { loginViewModel.logout() }
                                         )
                                     }
                                     is ScreenState.Projects -> {
@@ -310,13 +328,7 @@ class MainActivity : ComponentActivity() {
                                         SurveyCanvasScreen(
                                             viewModel = surveyCanvasViewModel,
                                             surveyId = screen.survey.id,
-                                            onBackClick = {
-                                                if (screen.surveyArea != null && screen.floor != null && screen.building != null && screen.project != null) {
-                                                    currentScreen = ScreenState.Surveys(screen.surveyArea, screen.floor, screen.building, screen.project)
-                                                } else {
-                                                    currentScreen = ScreenState.AllSurveys
-                                                }
-                                            }
+                                            onBackClick = { currentScreen = ScreenState.AllSurveys }
                                         )
                                     }
                                 }
@@ -326,36 +338,59 @@ class MainActivity : ComponentActivity() {
                                         viewModel = hierarchyViewModel,
                                         onDismiss = { showLocationSelector = false },
                                         onLocationSelected = { area, floor, building, project ->
+                                            pendingSurveyLocation = SurveyLocationContext(area, floor, building, project)
                                             showLocationSelector = false
-                                            currentScreen = ScreenState.Surveys(area, floor, building, project)
+                                            showSurveyDetailsDialog = true
                                         }
                                     )
+                                }
+
+                                if (showSurveyDetailsDialog) {
+                                    val location = pendingSurveyLocation
+                                    if (location != null) {
+                                        CreateSurveyDialog(
+                                            onDismiss = {
+                                                showSurveyDetailsDialog = false
+                                                pendingSurveyLocation = null
+                                            },
+                                            onConfirm = { title, mode ->
+                                                showSurveyDetailsDialog = false
+                                                surveyViewModel.createSurvey(
+                                                    surveyAreaId = location.surveyArea.id,
+                                                    title = title,
+                                                    mode = mode,
+                                                    onSuccess = { newSurvey ->
+                                                        pendingSurveyLocation = null
+                                                        currentScreen = ScreenState.SurveyCanvas(
+                                                            survey = newSurvey,
+                                                            surveyArea = location.surveyArea,
+                                                            floor = location.floor,
+                                                            building = location.building,
+                                                            project = location.project
+                                                        )
+                                                    }
+                                                )
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
                     } else if (isCreateUserFlowActive) {
                         CreateUserScreen(
                             viewModel = loginViewModel,
-                            onBackToLogin = {
-                                isCreateUserFlowActive = false
-                            }
+                            onBackToLogin = { isCreateUserFlowActive = false }
                         )
                     } else if (isResetPasswordFlowActive) {
                         ResetPasswordScreen(
                             viewModel = loginViewModel,
-                            onBackToLogin = {
-                                isResetPasswordFlowActive = false
-                            }
+                            onBackToLogin = { isResetPasswordFlowActive = false }
                         )
                     } else {
                         LoginRoute(
                             viewModel = loginViewModel,
-                            onCreateUserClick = {
-                                isCreateUserFlowActive = true
-                            },
-                            onForgotPasswordClick = {
-                                isResetPasswordFlowActive = true
-                            },
+                            onCreateUserClick = { isCreateUserFlowActive = true },
+                            onForgotPasswordClick = { isResetPasswordFlowActive = true },
                             onLoginSubmitted = { _, _ -> }
                         )
                     }
