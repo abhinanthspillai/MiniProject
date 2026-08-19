@@ -239,6 +239,9 @@ fun SurveyCanvasScreen(
                     verticalArrangement = Arrangement.spacedBy(Spacing.sm)
                 ) {
                     items(uiState.positions) { pos ->
+                        val posLabel = pos.position.label ?: "Position"
+                        val xVal = pos.position.floorPlanX ?: pos.position.simpleMapX ?: 0.0
+                        val yVal = pos.position.floorPlanY ?: pos.position.simpleMapY ?: 0.0
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -249,7 +252,7 @@ fun SurveyCanvasScreen(
                         ) {
                             Column(modifier = Modifier.padding(Spacing.md)) {
                                 Text(
-                                    text = "Position #${pos.position.sequenceNumber} (X: ${pos.position.xCoord}, Y: ${pos.position.yCoord})",
+                                    text = "$posLabel (X: $xVal, Y: $yVal)",
                                     style = NetrazeTypography.titleMedium,
                                     color = TextOnBlue,
                                     fontWeight = FontWeight.Bold
@@ -277,9 +280,10 @@ fun SurveyCanvasScreen(
                 } else {
                     LazyColumn(modifier = Modifier.height(280.dp)) {
                         items(uiState.positions.flatMap { it.observations }) { obs ->
+                            val chVal = obs.channel ?: "N/A"
                             Column(modifier = Modifier.padding(vertical = Spacing.xs)) {
-                                Text(text = "SSID: ${obs.ssid} | BSSID: ${obs.bssid}", style = NetrazeTypography.labelMedium, fontWeight = FontWeight.Bold)
-                                Text(text = "RSSI: ${obs.rssiDbm} dBm | Freq: ${obs.frequencyMhz} MHz | Ch: ${obs.channelNumber}", style = NetrazeTypography.bodySmall, color = TextSecondary)
+                                Text(text = "SSID: ${obs.ssid ?: "Hidden"} | BSSID: ${obs.bssid}", style = NetrazeTypography.labelMedium, fontWeight = FontWeight.Bold)
+                                Text(text = "RSSI: ${obs.rssiDbm} dBm | Freq: ${obs.frequencyMhz} MHz | Ch: $chVal", style = NetrazeTypography.bodySmall, color = TextSecondary)
                             }
                         }
                     }
