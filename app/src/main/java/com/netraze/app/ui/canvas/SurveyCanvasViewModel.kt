@@ -10,6 +10,7 @@ import com.netraze.app.data.local.entity.ScanCycleEntity
 import com.netraze.app.data.local.entity.SpatialPositionEntity
 import com.netraze.app.data.local.entity.SurveyEntity
 import com.netraze.app.data.local.entity.WifiObservationEntity
+import com.netraze.app.data.wifi.WifiScanCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +33,7 @@ data class SurveyCanvasUiState(
     val maxRssi: Int? = null,
     val avgRssi: Double? = null,
     val isLoading: Boolean = false,
+    val isScanning: Boolean = false,
     val error: String? = null
 )
 
@@ -40,7 +42,8 @@ class SurveyCanvasViewModel @Inject constructor(
     private val surveyDao: SurveyDao,
     private val spatialPositionDao: SpatialPositionDao,
     private val scanCycleDao: ScanCycleDao,
-    private val wifiObservationDao: WifiObservationDao
+    private val wifiObservationDao: WifiObservationDao,
+    private val wifiScanCoordinator: WifiScanCoordinator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SurveyCanvasUiState())
@@ -80,6 +83,85 @@ class SurveyCanvasViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message ?: "Failed to load canvas data"
+                )
+            }
+        }
+    }
+
+    fun addPositionAndScan(
+        surveyId: UUID,
+        mode: String,
+        x: Double? = null,
+        y: Double? = null,
+        label: String? = null
+    ) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isScanning = true, error = null)
+            try {
+                val now = System.currentTimeMillis()
+                val posId = UUID.randomUUID()
+                val count = _uiState.value.positions.size + 1
+                val posLabel = label ?: "Point $count"
+
+                val posEntity = when (mode) {
+                    "floor_plan" -> SpatialPositionEntity(
+                        id = posId,
+                        surveyId = surveyId,
+                        label = posLabel,
+                        floorPlanX = x ?: 0.5,
+                        floorPlanY = y ?: 0.5,
+                        simpleMapX = null,
+                        simpleMapY = null,
+                        latitude = null,
+                        longitude = null,
+                        accuracyMeters = null,
+                        capturedAt = now,
+                        createdAt = now,
+                        syncState = "pending"
+                    )
+                    "simple_map" -> SpatialPositionEntity(
+                        id = posId,
+                        surveyId = surveyId,
+                        label = posLabel,
+                        floorPlanX = null,
+                        floorPlanY = null,
+                        simpleMapX = x ?: 0.5,
+                        simpleMapY = y ?: 0.5,
+                        latitude = null,
+                        longitude = null,
+                        accuracyMeters = null,
+                        capturedAt = now,
+                        createdAt = now,
+                        syncState = "pending"
+                    )
+                    else -> SpatialPositionEntity(
+                        id = posId,
+                        surveyId = surveyId,
+                        label = posLabel,
+                        floorPlanX = null,
+                        floorPlanY = null,
+                        simpleMapX = null,
+                        simpleMapY = null,
+                        latitude = 12.9716, // Sample location coordinates
+                        longitude = 77.5946,
+                        accuracyMeters = 3.0,
+                        capturedAt = now,
+                        createdAt = now,
+                        syncState = "pending"
+                    )
+                }
+
+                spatialPositionDao.insertSpatialPosition(posEntity)
+
+                // Execute real Wi-Fi hardware scan cycle
+                wifiScanCoordinator.performScanCycle(surveyId, posId)
+
+                // Reload UI state
+                loadSurveyCanvasData(surveyId)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isScanning = false,
+                    error = e.message ?: "Failed to execute scan"
                 )
             }
         }

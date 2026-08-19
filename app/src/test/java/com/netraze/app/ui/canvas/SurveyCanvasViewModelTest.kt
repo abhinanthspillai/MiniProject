@@ -8,6 +8,7 @@ import com.netraze.app.data.local.entity.ScanCycleEntity
 import com.netraze.app.data.local.entity.SpatialPositionEntity
 import com.netraze.app.data.local.entity.SurveyEntity
 import com.netraze.app.data.local.entity.WifiObservationEntity
+import com.netraze.app.data.wifi.WifiScanCoordinator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -19,6 +20,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
+import org.mockito.Mockito
 import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -29,6 +31,7 @@ class SurveyCanvasViewModelTest {
     private lateinit var fakeSpatialDao: FakeSpatialPositionDao
     private lateinit var fakeScanCycleDao: FakeScanCycleDao
     private lateinit var fakeWifiObsDao: FakeWifiObservationDao
+    private lateinit var mockWifiScanCoordinator: WifiScanCoordinator
     private lateinit var viewModel: SurveyCanvasViewModel
 
     @Before
@@ -38,12 +41,14 @@ class SurveyCanvasViewModelTest {
         fakeSpatialDao = FakeSpatialPositionDao()
         fakeScanCycleDao = FakeScanCycleDao()
         fakeWifiObsDao = FakeWifiObservationDao()
+        mockWifiScanCoordinator = Mockito.mock(WifiScanCoordinator::class.java)
 
         viewModel = SurveyCanvasViewModel(
             fakeSurveyDao,
             fakeSpatialDao,
             fakeScanCycleDao,
-            fakeWifiObsDao
+            fakeWifiObsDao,
+            mockWifiScanCoordinator
         )
     }
 
