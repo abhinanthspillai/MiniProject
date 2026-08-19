@@ -1,9 +1,13 @@
 package com.netraze.app.di
 
+import com.netraze.app.data.local.dao.HierarchyDao
 import com.netraze.app.data.remote.AuthInterceptor
 import com.netraze.app.data.remote.api.AuthApi
+import com.netraze.app.data.remote.api.HierarchyApi
 import com.netraze.app.data.repository.AuthRepository
 import com.netraze.app.data.repository.AuthRepositoryImpl
+import com.netraze.app.data.repository.HierarchyRepository
+import com.netraze.app.data.repository.HierarchyRepositoryImpl
 import com.netraze.app.data.security.SecureSessionStore
 import dagger.Module
 import dagger.Provides
@@ -67,4 +71,20 @@ object NetworkModule {
     ): AuthRepository {
         return AuthRepositoryImpl(authApi, sessionStore)
     }
+
+    @Provides
+    @Singleton
+    fun provideHierarchyApi(retrofit: Retrofit): HierarchyApi {
+        return retrofit.create(HierarchyApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideHierarchyRepository(
+        hierarchyApi: HierarchyApi,
+        hierarchyDao: HierarchyDao
+    ): HierarchyRepository {
+        return HierarchyRepositoryImpl(hierarchyApi, hierarchyDao)
+    }
 }
+

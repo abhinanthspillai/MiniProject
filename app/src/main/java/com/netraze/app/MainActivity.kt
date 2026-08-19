@@ -16,17 +16,29 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.netraze.app.data.local.entity.BuildingEntity
+import com.netraze.app.data.local.entity.FloorEntity
+import com.netraze.app.data.local.entity.ProjectEntity
 import com.netraze.app.data.remote.api.AuthApi
 import com.netraze.app.data.repository.AuthRepository
+import com.netraze.app.data.repository.HierarchyRepository
 import com.netraze.app.data.security.SecureSessionStore
 import com.netraze.app.ui.auth.LoginRoute
 import com.netraze.app.ui.auth.LoginViewModel
 import com.netraze.app.ui.components.PrimaryButton
+import com.netraze.app.ui.hierarchy.BuildingDetailScreen
+import com.netraze.app.ui.hierarchy.FloorDetailScreen
+import com.netraze.app.ui.hierarchy.HierarchyViewModel
+import com.netraze.app.ui.hierarchy.ProjectDetailScreen
+import com.netraze.app.ui.hierarchy.ProjectsScreen
 import com.netraze.app.ui.theme.FormSurfaceBlue
 import com.netraze.app.ui.theme.NetrazeTheme
 import com.netraze.app.ui.theme.NetrazeTypography
@@ -37,6 +49,14 @@ import com.netraze.app.ui.theme.TextOnBlue
 import com.netraze.app.ui.theme.TextSecondary
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+
+sealed class ScreenState {
+    object Dashboard : ScreenState()
+    object Projects : ScreenState()
+    data class ProjectDetail(val project: ProjectEntity) : ScreenState()
+    data class BuildingDetail(val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
+    data class FloorDetail(val floor: FloorEntity, val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
+}
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -50,9 +70,18 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var secureSessionStore: SecureSessionStore
 
+    @Inject
+    lateinit var hierarchyRepository: HierarchyRepository
+
     private val loginViewModel: LoginViewModel by lazy {
         LoginViewModel(authRepository, authApi).apply {
             setDependencies(authRepository, authApi)
+        }
+    }
+
+    private val hierarchyViewModel: HierarchyViewModel by lazy {
+        HierarchyViewModel(hierarchyRepository).apply {
+            setRepository(hierarchyRepository)
         }
     }
 
@@ -66,15 +95,74 @@ class MainActivity : ComponentActivity() {
                     color = SurfaceLight
                 ) {
                     val authState by loginViewModel.authState.collectAsStateWithLifecycle()
+                    var currentScreen by remember { mutableStateOf<ScreenState>(ScreenState.Dashboard) }
 
                     if (authState.isAuthenticated) {
-                        AuthenticatedDashboardScreen(
-                            email = authState.userProfile?.email ?: authState.session?.email ?: "Unknown",
-                            role = authState.userProfile?.role ?: authState.session?.role ?: "Unknown",
-                            userId = (authState.userProfile?.id ?: authState.session?.userId)?.toString() ?: "Unknown",
-                            isKeystoreProtected = secureSessionStore.isKeystoreProtected(),
-                            onSignOut = { loginViewModel.logout() }
-                        )
+                        val email = authState.userProfile?.email ?: authState.session?.email ?: "Unknown"
+                        val role = authState.userProfile?.role ?: authState.session?.role ?: "Unknown"
+                        val userId = (authState.userProfile?.id ?: authState.session?.userId)?.toString() ?: "Unknown"
+
+                        when (val screen = currentScreen) {
+                            is ScreenState.Dashboard -> {
+                                AuthenticatedDashboardScreen(
+                                    email = email,
+                                    role = role,
+                                    userId = userId,
+                                    isKeystoreProtected = secureSessionStore.isKeystoreProtected(),
+                                    onBrowseHierarchy = { currentScreen = ScreenState.Projects },
+                                    onSignOut = {
+                                        currentScreen = ScreenState.Dashboard
+                                        loginViewModel.logout()
+                                    }
+                                )
+                            }
+                            is ScreenState.Projects -> {
+                                ProjectsScreen(
+                                    viewModel = hierarchyViewModel,
+                                    userRole = role,
+                                    currentUserId = userId,
+                                    onProjectClick = { project ->
+                                        currentScreen = ScreenState.ProjectDetail(project)
+                                    },
+                                    onBackClick = { currentScreen = ScreenState.Dashboard }
+                                )
+                            }
+                            is ScreenState.ProjectDetail -> {
+                                ProjectDetailScreen(
+                                    viewModel = hierarchyViewModel,
+                                    project = screen.project,
+                                    userRole = role,
+                                    currentUserId = userId,
+                                    onBuildingClick = { building ->
+                                        currentScreen = ScreenState.BuildingDetail(building, screen.project)
+                                    },
+                                    onBackClick = { currentScreen = ScreenState.Projects }
+                                )
+                            }
+                            is ScreenState.BuildingDetail -> {
+                                BuildingDetailScreen(
+                                    viewModel = hierarchyViewModel,
+                                    building = screen.building,
+                                    project = screen.project,
+                                    userRole = role,
+                                    currentUserId = userId,
+                                    onFloorClick = { floor ->
+                                        currentScreen = ScreenState.FloorDetail(floor, screen.building, screen.project)
+                                    },
+                                    onBackClick = { currentScreen = ScreenState.ProjectDetail(screen.project) }
+                                )
+                            }
+                            is ScreenState.FloorDetail -> {
+                                FloorDetailScreen(
+                                    viewModel = hierarchyViewModel,
+                                    floor = screen.floor,
+                                    project = screen.project,
+                                    userRole = role,
+                                    currentUserId = userId,
+                                    onBackClick = { currentScreen = ScreenState.BuildingDetail(screen.building, screen.project) }
+                                )
+                            }
+                        }
                     } else {
                         LoginRoute(
                             viewModel = loginViewModel,
@@ -93,6 +181,7 @@ fun AuthenticatedDashboardScreen(
     role: String,
     userId: String,
     isKeystoreProtected: Boolean,
+    onBrowseHierarchy: () -> Unit,
     onSignOut: () -> Unit
 ) {
     Column(
@@ -149,7 +238,14 @@ fun AuthenticatedDashboardScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(Spacing.xxl))
+        Spacer(modifier = Modifier.height(Spacing.xl))
+
+        PrimaryButton(
+            text = "Browse Hierarchy Context",
+            onClick = onBrowseHierarchy
+        )
+
+        Spacer(modifier = Modifier.height(Spacing.md))
 
         PrimaryButton(
             text = "Sign Out",

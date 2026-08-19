@@ -10,10 +10,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,6 +73,8 @@ fun LoginScreen(
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = SurfaceLight
@@ -123,13 +130,15 @@ fun LoginScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = Spacing.xl, vertical = 32.dp)
+                        .padding(horizontal = Spacing.xl, vertical = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "Welcome Back!",
                         style = NetrazeTypography.headlineMedium,
                         color = TextOnBlue,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(modifier = Modifier.height(Spacing.xs))
@@ -137,7 +146,8 @@ fun LoginScreen(
                     Text(
                         text = "Sign in to your account to continue",
                         style = NetrazeTypography.bodyMedium,
-                        color = TextOnBlueSecondary
+                        color = TextOnBlueSecondary,
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(modifier = Modifier.height(Spacing.xl))
@@ -154,8 +164,32 @@ fun LoginScreen(
                         errorMessage = uiState.errorMessage,
                         isLoginEnabled = uiState.isLoginEnabled
                     )
+
+                    Spacer(modifier = Modifier.height(Spacing.md))
+
+                    TextButton(onClick = { showForgotPasswordDialog = true }) {
+                        Text(
+                            text = "Forgot Password?",
+                            style = NetrazeTypography.bodyMedium,
+                            color = TextOnBlue,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
+        }
+
+        if (showForgotPasswordDialog) {
+            AlertDialog(
+                onDismissRequest = { showForgotPasswordDialog = false },
+                title = { Text("Forgot Password", fontWeight = FontWeight.Bold) },
+                text = { Text("Contact your Netraze Administrator to reset your password.") },
+                confirmButton = {
+                    TextButton(onClick = { showForgotPasswordDialog = false }) {
+                        Text("OK")
+                    }
+                }
+            )
         }
     }
 }
