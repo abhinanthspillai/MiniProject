@@ -6,7 +6,6 @@ import com.netraze.app.data.remote.api.AuthApi
 import com.netraze.app.data.remote.dto.UserDto
 import com.netraze.app.data.repository.AuthRepository
 import com.netraze.app.data.security.AuthSession
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,11 +21,12 @@ data class AuthenticatedState(
     val profileError: String? = null
 )
 
-@HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
-    private val authApi: AuthApi
+    private var authRepository: AuthRepository?,
+    private var authApi: AuthApi?
 ) : ViewModel() {
+
+    constructor() : this(null, null)
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -38,9 +38,16 @@ class LoginViewModel @Inject constructor(
         checkSessionRestoration()
     }
 
+    fun setDependencies(repository: AuthRepository, api: AuthApi) {
+        this.authRepository = repository
+        this.authApi = api
+        checkSessionRestoration()
+    }
+
     fun checkSessionRestoration() {
+        val repository = authRepository ?: return
         viewModelScope.launch {
-            val session = authRepository.getCurrentSession()
+            val session = repository.getCurrentSession()
             if (session != null && session.accessToken.isNotBlank()) {
                 _authState.update {
                     it.copy(isAuthenticated = true, session = session)
@@ -53,10 +60,11 @@ class LoginViewModel @Inject constructor(
     }
 
     fun fetchUserProfile() {
+        val api = authApi ?: return
         _authState.update { it.copy(isFetchingProfile = true, profileError = null) }
         viewModelScope.launch {
             try {
-                val profile = authApi.getMe()
+                val profile = api.getMe()
                 _authState.update {
                     it.copy(userProfile = profile, isFetchingProfile = false)
                 }
@@ -89,15 +97,20 @@ class LoginViewModel @Inject constructor(
     }
 
     fun submitLogin(onLoginSuccess: () -> Unit = {}) {
+        val repository = authRepository
+        if (repository == null) {
+            _uiState.update { it.copy(errorMessage = "Authentication repository uninitialized") }
+            return
+        }
         val currentState = _uiState.value
         if (!currentState.isLoginEnabled || currentState.isLoading) return
 
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
         viewModelScope.launch {
-            val result = authRepository.login(currentState.identity, currentState.password)
+            val result = repository.login(currentState.identity, currentState.password)
             result.onSuccess { user ->
-                val session = authRepository.getCurrentSession()
+                val session = repository.getCurrentSession()
                 _uiState.update { state -> state.copy(isLoading = false, errorMessage = null) }
                 _authState.update {
                     it.copy(isAuthenticated = true, session = session, userProfile = user)
@@ -112,8 +125,9 @@ class LoginViewModel @Inject constructor(
     }
 
     fun logout() {
+        val repository = authRepository
         viewModelScope.launch {
-            authRepository.logout()
+            repository?.logout()
             _authState.update { AuthenticatedState(isAuthenticated = false) }
             _uiState.update { LoginUiState() }
         }

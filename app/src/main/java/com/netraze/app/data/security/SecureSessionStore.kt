@@ -8,10 +8,13 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.google.gson.Gson
+import com.google.gson.JsonParseException
 import kotlinx.coroutines.flow.first
+import java.io.IOException
+import java.security.GeneralSecurityException
 import java.util.UUID
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "netraze_secure_session")
+val Context.sessionDataStore: DataStore<Preferences> by preferencesDataStore(name = "netraze_secure_session")
 
 data class AuthSession(
     val accessToken: String,
@@ -22,31 +25,31 @@ data class AuthSession(
 
 /**
  * Dedicated Android SecureSessionStore (D090).
- * Key material is hardware-backed inside Android Keystore via CryptoManager.
- * Session payload is encrypted with AES/GCM and stored inside Jetpack DataStore.
+ * Session payload is encrypted via SessionCrypto interface (AndroidKeystoreSessionCrypto in production)
+ * and persisted in Jetpack DataStore.
  * Completely separate from Room survey evidence.
  */
 class SecureSessionStore(
-    private val context: Context,
-    private val cryptoManager: CryptoManager = CryptoManager(),
+    private val dataStore: DataStore<Preferences>,
+    private val sessionCrypto: SessionCrypto,
     private val gson: Gson = Gson()
 ) {
 
     suspend fun saveSession(session: AuthSession) {
         val jsonPayload = gson.toJson(session)
-        val (iv, ciphertext) = cryptoManager.encrypt(jsonPayload.toByteArray(Charsets.UTF_8))
+        val (iv, ciphertext) = sessionCrypto.encrypt(jsonPayload.toByteArray(Charsets.UTF_8))
 
         val base64Iv = Base64.encodeToString(iv, Base64.NO_WRAP)
         val base64Ciphertext = Base64.encodeToString(ciphertext, Base64.NO_WRAP)
 
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[KEY_SESSION_IV] = base64Iv
             preferences[KEY_SESSION_DATA] = base64Ciphertext
         }
     }
 
     suspend fun getSession(): AuthSession? {
-        val preferences = context.dataStore.data.first()
+        val preferences = dataStore.data.first()
         val base64Iv = preferences[KEY_SESSION_IV] ?: return null
         val base64Ciphertext = preferences[KEY_SESSION_DATA] ?: return null
 
@@ -54,18 +57,30 @@ class SecureSessionStore(
             val iv = Base64.decode(base64Iv, Base64.NO_WRAP)
             val ciphertext = Base64.decode(base64Ciphertext, Base64.NO_WRAP)
 
-            val decryptedBytes = cryptoManager.decrypt(iv, ciphertext)
+            val decryptedBytes = sessionCrypto.decrypt(iv, ciphertext)
             val jsonString = String(decryptedBytes, Charsets.UTF_8)
             gson.fromJson(jsonString, AuthSession::class.java)
-        } catch (e: Exception) {
-            // Decryption failure or corrupted store -> clear session safely
+        } catch (e: SessionCryptoException) {
+            // Decryption key / payload failure -> safely clear unusable auth session ciphertext only.
+            // Room survey evidence remains 100% untouched and preserved.
             clearSession()
+            null
+        } catch (e: GeneralSecurityException) {
+            clearSession()
+            null
+        } catch (e: JsonParseException) {
+            clearSession()
+            null
+        } catch (e: IllegalArgumentException) {
+            clearSession()
+            null
+        } catch (e: IOException) {
             null
         }
     }
 
     suspend fun clearSession() {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences.remove(KEY_SESSION_IV)
             preferences.remove(KEY_SESSION_DATA)
         }
@@ -74,6 +89,10 @@ class SecureSessionStore(
     suspend fun hasActiveSession(): Boolean {
         val session = getSession()
         return session != null && session.accessToken.isNotBlank()
+    }
+
+    fun isKeystoreProtected(): Boolean {
+        return sessionCrypto.isKeystoreProtected()
     }
 
     companion object {

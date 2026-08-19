@@ -21,14 +21,14 @@ import java.util.UUID
 class SecureSessionStoreTest {
 
     private lateinit var context: Context
-    private lateinit var cryptoManager: CryptoManager
+    private lateinit var sessionCrypto: SessionCrypto
     private lateinit var sessionStore: SecureSessionStore
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        cryptoManager = CryptoManager()
-        sessionStore = SecureSessionStore(context, cryptoManager)
+        sessionCrypto = FakeSessionCrypto()
+        sessionStore = SecureSessionStore(context.sessionDataStore, sessionCrypto)
     }
 
     @After

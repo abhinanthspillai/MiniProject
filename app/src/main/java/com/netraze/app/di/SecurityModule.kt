@@ -1,8 +1,13 @@
 package com.netraze.app.di
 
 import android.content.Context
-import com.netraze.app.data.security.CryptoManager
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import com.netraze.app.data.security.AndroidKeystoreSessionCrypto
 import com.netraze.app.data.security.SecureSessionStore
+import com.netraze.app.data.security.SessionCrypto
+import com.netraze.app.data.security.sessionDataStore
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -12,18 +17,30 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object SecurityModule {
+abstract class SecurityModule {
 
-    @Provides
+    @Binds
     @Singleton
-    fun provideCryptoManager(): CryptoManager = CryptoManager()
+    abstract fun bindSessionCrypto(
+        impl: AndroidKeystoreSessionCrypto
+    ): SessionCrypto
 
-    @Provides
-    @Singleton
-    fun provideSecureSessionStore(
-        @ApplicationContext context: Context,
-        cryptoManager: CryptoManager
-    ): SecureSessionStore {
-        return SecureSessionStore(context, cryptoManager)
+    companion object {
+        @Provides
+        @Singleton
+        fun provideSessionDataStore(
+            @ApplicationContext context: Context
+        ): DataStore<Preferences> {
+            return context.sessionDataStore
+        }
+
+        @Provides
+        @Singleton
+        fun provideSecureSessionStore(
+            dataStore: DataStore<Preferences>,
+            sessionCrypto: SessionCrypto
+        ): SecureSessionStore {
+            return SecureSessionStore(dataStore, sessionCrypto)
+        }
     }
 }
