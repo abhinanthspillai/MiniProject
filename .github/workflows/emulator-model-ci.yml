@@ -1,0 +1,38 @@
+name: Emulator Model CI
+
+on:
+  push:
+    branches:
+      - emulator-working-model-v2
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android 36 platform
+        run: sdkmanager "platforms;android-36"
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Run Android unit tests
+        run: ./gradlew testDebugUnitTest --stacktrace
+
+      - name: Assemble debug APK
+        run: ./gradlew assembleDebug --stacktrace
