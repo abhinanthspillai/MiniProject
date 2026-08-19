@@ -88,7 +88,7 @@ class UnsolicitedScanService : Service() {
             ).apply {
                 description = "Foreground channel for Netraze background Wi-Fi scanning"
             }
-            val manager = getSystemService(Context::NOTIFICATION_SERVICE) as NotificationManager
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
         }
     }
