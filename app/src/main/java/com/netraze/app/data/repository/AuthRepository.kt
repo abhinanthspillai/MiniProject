@@ -32,10 +32,10 @@ class AuthRepositoryImpl(
             sessionStore.saveSession(session)
             Result.success(response.user)
         } catch (e: HttpException) {
-            val errorMsg = if (e.code() == 401) {
-                "Invalid email address or password"
-            } else {
-                "Authentication server error (${e.code()})"
+            val errorMsg = when (e.code()) {
+                401 -> "Invalid email address or password"
+                403 -> "Not authorized to perform this operation"
+                else -> "Authentication server error (${e.code()})"
             }
             Result.failure(Exception(errorMsg, e))
         } catch (e: IOException) {
