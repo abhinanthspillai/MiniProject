@@ -1,9 +1,13 @@
 package com.netraze.app.di
 
 import com.netraze.app.data.local.dao.HierarchyDao
+import com.netraze.app.data.local.dao.ScanCycleDao
+import com.netraze.app.data.local.dao.SpatialPositionDao
 import com.netraze.app.data.local.dao.SurveyDao
+import com.netraze.app.data.local.dao.WifiObservationDao
 import com.netraze.app.data.remote.api.AuthApi
 import com.netraze.app.data.remote.api.HierarchyApi
+import com.netraze.app.data.remote.api.SyncApi
 import com.netraze.app.data.remote.api.SurveyApi
 import com.netraze.app.data.repository.AuthRepository
 import com.netraze.app.data.repository.AuthRepositoryImpl
@@ -12,6 +16,7 @@ import com.netraze.app.data.repository.HierarchyRepositoryImpl
 import com.netraze.app.data.repository.SurveyRepository
 import com.netraze.app.data.repository.SurveyRepositoryImpl
 import com.netraze.app.data.security.SecureSessionStore
+import com.netraze.app.data.sync.SyncManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -105,5 +110,23 @@ object NetworkModule {
         sessionStore: SecureSessionStore
     ): SurveyRepository {
         return SurveyRepositoryImpl(surveyApi, surveyDao, sessionStore)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSyncApi(retrofit: Retrofit): SyncApi {
+        return retrofit.create(SyncApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSyncManager(
+        syncApi: SyncApi,
+        surveyDao: SurveyDao,
+        spatialPositionDao: SpatialPositionDao,
+        scanCycleDao: ScanCycleDao,
+        wifiObservationDao: WifiObservationDao
+    ): SyncManager {
+        return SyncManager(syncApi, surveyDao, spatialPositionDao, scanCycleDao, wifiObservationDao)
     }
 }

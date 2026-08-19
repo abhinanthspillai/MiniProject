@@ -1,6 +1,7 @@
 package com.netraze.app.data.wifi
 
 import android.content.Context
+import android.net.wifi.WifiManager
 import com.netraze.app.data.local.dao.ScanCycleDao
 import com.netraze.app.data.local.entity.ScanCycleEntity
 import com.netraze.app.data.local.entity.WifiObservationEntity
@@ -18,12 +19,17 @@ import java.util.UUID
 class WifiScanCoordinatorTest {
 
     private lateinit var mockContext: Context
+    private lateinit var mockWifiManager: WifiManager
     private lateinit var fakeScanCycleDao: FakeScanCycleDao
     private lateinit var coordinator: WifiScanCoordinator
 
     @Before
     fun setUp() {
         mockContext = Mockito.mock(Context::class.java)
+        mockWifiManager = Mockito.mock(WifiManager::class.java)
+        Mockito.`when`(mockContext.applicationContext).thenReturn(mockContext)
+        Mockito.`when`(mockContext.getSystemService(Context.WIFI_SERVICE)).thenReturn(mockWifiManager)
+
         fakeScanCycleDao = FakeScanCycleDao()
         coordinator = WifiScanCoordinator(mockContext, fakeScanCycleDao)
     }
