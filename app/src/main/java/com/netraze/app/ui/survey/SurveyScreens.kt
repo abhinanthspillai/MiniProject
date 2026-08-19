@@ -1,5 +1,6 @@
 package com.netraze.app.ui.survey
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,10 +11,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.Navigation
+import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -92,14 +99,13 @@ fun SurveysScreen(
             .padding(Spacing.lg)
     ) {
         HeaderBar(
-            title = "Surveys: ${surveyArea.name}",
-            subtitle = "Survey Area Context",
+            title = surveyArea.name,
+            subtitle = "${project.name} › ${surveyArea.name} › Surveys",
             onBackClick = onBackClick
         )
 
         Spacer(modifier = Modifier.height(Spacing.lg))
 
-        // + Start New Survey button is available for Survey Technicians and Administrators
         PrimaryButton(
             text = "+ Start New Survey",
             onClick = { showCreateDialog = true }
@@ -145,7 +151,7 @@ fun SurveysScreen(
                             )
                             Spacer(modifier = Modifier.height(Spacing.xs))
                             Text(
-                                text = "Mode: ${survey.mode.replace("_", " ").uppercase()} | Status: ${survey.status}",
+                                text = "Mode: ${survey.mode.replace("_", " ").uppercase()} | Status: ${survey.status.uppercase()}",
                                 style = NetrazeTypography.bodySmall,
                                 color = TextOnBlue
                             )
@@ -202,31 +208,38 @@ fun CreateSurveyDialog(
 
                 Spacer(modifier = Modifier.height(Spacing.md))
 
-                Text(text = "Survey Mode", style = NetrazeTypography.labelLarge, color = TextSecondary)
+                Text(text = "Select Survey Mode", style = NetrazeTypography.labelLarge, color = TextSecondary)
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(
-                        selected = (selectedMode == "location_survey"),
-                        onClick = { selectedMode = "location_survey" }
-                    )
-                    Text(text = "Location Survey Mode", style = NetrazeTypography.bodyMedium)
-                }
+                Spacer(modifier = Modifier.height(Spacing.sm))
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(
-                        selected = (selectedMode == "simple_map"),
-                        onClick = { selectedMode = "simple_map" }
-                    )
-                    Text(text = "Simple Map Mode", style = NetrazeTypography.bodyMedium)
-                }
+                // Explanatory Mode Cards (Section 8)
+                SurveyModeCard(
+                    title = "Floor Plan Mode",
+                    subtitle = "Use an existing floor plan to place survey points.",
+                    icon = Icons.Rounded.Map,
+                    isSelected = (selectedMode == "floor_plan"),
+                    onClick = { selectedMode = "floor_plan" }
+                )
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(
-                        selected = (selectedMode == "floor_plan"),
-                        onClick = { selectedMode = "floor_plan" }
-                    )
-                    Text(text = "Floor Plan Mode", style = NetrazeTypography.bodyMedium)
-                }
+                Spacer(modifier = Modifier.height(Spacing.xs))
+
+                SurveyModeCard(
+                    title = "Simple Map Mode",
+                    subtitle = "Create approximate survey positions without a floor plan.",
+                    icon = Icons.Rounded.Navigation,
+                    isSelected = (selectedMode == "simple_map"),
+                    onClick = { selectedMode = "simple_map" }
+                )
+
+                Spacer(modifier = Modifier.height(Spacing.xs))
+
+                SurveyModeCard(
+                    title = "Location Survey Mode",
+                    subtitle = "Capture flexible location-based survey points.",
+                    icon = Icons.Rounded.Place,
+                    isSelected = (selectedMode == "location_survey"),
+                    onClick = { selectedMode = "location_survey" }
+                )
             }
         },
         confirmButton = {
@@ -242,4 +255,42 @@ fun CreateSurveyDialog(
             }
         }
     )
+}
+
+@Composable
+private fun SurveyModeCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = if (isSelected) PrimaryBlue else TextSecondary.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(8.dp)
+            ),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+    ) {
+        Row(
+            modifier = Modifier.padding(Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected = isSelected,
+                onClick = onClick
+            )
+            Spacer(modifier = Modifier.width(Spacing.xs))
+            Icon(imageVector = icon, contentDescription = title, tint = PrimaryBlue)
+            Spacer(modifier = Modifier.width(Spacing.sm))
+            Column {
+                Text(text = title, style = NetrazeTypography.labelLarge, fontWeight = FontWeight.Bold)
+                Text(text = subtitle, style = NetrazeTypography.bodySmall, color = TextSecondary)
+            }
+        }
+    }
 }

@@ -2,7 +2,7 @@ package com.netraze.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Reference image inspired visual palette adapted to Netraze (Indoor Wi-Fi Survey & Analysis)
+// Visual palette adapted to Netraze (Indoor Wi-Fi Survey & Analysis)
 val FormSurfaceBlue = Color(0xFF2252A0)     // Vibrant Deep Royal Blue Sheet Container
 val PrimaryBlue = Color(0xFF2252A0)         // Accent Royal Blue
 val SurfaceLight = Color(0xFFF8FAFC)        // Clean Light Off-White Backdrop
@@ -26,3 +26,9 @@ val CtaTextBlue = Color(0xFF2252A0)         // Bold Royal Blue CTA Text
 val ErrorRed = Color(0xFFEF4444)            // Error Alert Banner Accent
 val ErrorBannerBackground = Color(0xFFFEF2F2)// Soft Red Container
 val ErrorBannerText = Color(0xFF991B1B)      // Dark Red Error Text
+
+// State-Aware Offline Chips (Section 16)
+val OfflineChipBackground = Color(0xFFFEF3C7) // Amber/Yellow Chip Background
+val OfflineChipText = Color(0xFF92400E)       // Dark Amber Text
+val SuccessChipBackground = Color(0xFFD1FAE5)// Soft Green Chip Background
+val SuccessChipText = Color(0xFF065F46)      // Dark Green Text

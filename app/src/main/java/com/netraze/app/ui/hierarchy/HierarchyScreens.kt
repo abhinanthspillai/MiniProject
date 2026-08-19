@@ -52,6 +52,7 @@ import com.netraze.app.data.local.entity.BuildingEntity
 import com.netraze.app.data.local.entity.FloorEntity
 import com.netraze.app.data.local.entity.ProjectEntity
 import com.netraze.app.data.local.entity.SurveyAreaEntity
+import com.netraze.app.ui.components.OfflineBanner
 import com.netraze.app.ui.theme.FormSurfaceBlue
 import com.netraze.app.ui.theme.NetrazeTypography
 import com.netraze.app.ui.theme.PrimaryBlue
@@ -181,7 +182,8 @@ fun ProjectsScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
 
-    val isAdministrator = (userRole == "administrator")
+    val isAdministrator = (userRole.lowercase() == "administrator")
+    val isOffline = !error.isNullOrBlank()
 
     LaunchedEffect(Unit) {
         viewModel.loadProjects()
@@ -189,7 +191,7 @@ fun ProjectsScreen(
 
     Scaffold(
         topBar = {
-            HeaderBar(title = "Projects", subtitle = "Netraze Hierarchy Root", onBackClick = onBackClick)
+            HeaderBar(title = "Projects", subtitle = "Netraze Projects Hierarchy", onBackClick = onBackClick)
         },
         floatingActionButton = {
             if (isAdministrator) {
@@ -204,13 +206,10 @@ fun ProjectsScreen(
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize().padding(Spacing.lg)) {
-                if (!error.isNullOrBlank()) {
-                    ErrorMessage(message = error ?: "")
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                }
+                OfflineBanner(isOffline = isOffline, hasCachedData = projects.isNotEmpty())
 
                 if (projects.isEmpty() && !isLoading) {
-                    EmptyStateText(message = "No projects found. Tap '+' to create a project.")
+                    EmptyStateText(message = if (isAdministrator) "No projects found. Tap '+' to create a project." else "No projects available.")
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         items(projects) { project ->
@@ -259,7 +258,8 @@ fun ProjectDetailScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
 
-    val isOwnerAdmin = (userRole == "administrator" && project.ownerId.toString() == currentUserId)
+    val isOwnerAdmin = (userRole.lowercase() == "administrator" && project.ownerId.toString() == currentUserId)
+    val isOffline = !error.isNullOrBlank()
 
     LaunchedEffect(project.id) {
         viewModel.loadBuildings(project.id)
@@ -267,7 +267,7 @@ fun ProjectDetailScreen(
 
     Scaffold(
         topBar = {
-            HeaderBar(title = project.name, subtitle = "Buildings Hierarchy", onBackClick = onBackClick)
+            HeaderBar(title = project.name, subtitle = "Project › Buildings", onBackClick = onBackClick)
         },
         floatingActionButton = {
             if (isOwnerAdmin) {
@@ -282,13 +282,10 @@ fun ProjectDetailScreen(
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize().padding(Spacing.lg)) {
-                if (!error.isNullOrBlank()) {
-                    ErrorMessage(message = error ?: "")
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                }
+                OfflineBanner(isOffline = isOffline, hasCachedData = buildings.isNotEmpty())
 
                 if (buildings.isEmpty() && !isLoading) {
-                    EmptyStateText(message = "No buildings found in this project.")
+                    EmptyStateText(message = "No buildings recorded for this project.")
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         items(buildings) { building ->
@@ -336,7 +333,8 @@ fun BuildingDetailScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
 
-    val isOwnerAdmin = (userRole == "administrator" && project.ownerId.toString() == currentUserId)
+    val isOwnerAdmin = (userRole.lowercase() == "administrator" && project.ownerId.toString() == currentUserId)
+    val isOffline = !error.isNullOrBlank()
 
     LaunchedEffect(building.id) {
         viewModel.loadFloors(building.id)
@@ -344,7 +342,7 @@ fun BuildingDetailScreen(
 
     Scaffold(
         topBar = {
-            HeaderBar(title = building.name, subtitle = "Floors Hierarchy", onBackClick = onBackClick)
+            HeaderBar(title = building.name, subtitle = "${project.name} › ${building.name} › Floors", onBackClick = onBackClick)
         },
         floatingActionButton = {
             if (isOwnerAdmin) {
@@ -359,13 +357,10 @@ fun BuildingDetailScreen(
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize().padding(Spacing.lg)) {
-                if (!error.isNullOrBlank()) {
-                    ErrorMessage(message = error ?: "")
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                }
+                OfflineBanner(isOffline = isOffline, hasCachedData = floors.isNotEmpty())
 
                 if (floors.isEmpty() && !isLoading) {
-                    EmptyStateText(message = "No floors found in this building.")
+                    EmptyStateText(message = "No floors recorded for this building.")
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         items(floors) { floor ->
@@ -413,7 +408,8 @@ fun FloorDetailScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
 
-    val isOwnerAdmin = (userRole == "administrator" && project.ownerId.toString() == currentUserId)
+    val isOwnerAdmin = (userRole.lowercase() == "administrator" && project.ownerId.toString() == currentUserId)
+    val isOffline = !error.isNullOrBlank()
 
     LaunchedEffect(floor.id) {
         viewModel.loadSurveyAreas(floor.id)
@@ -421,7 +417,7 @@ fun FloorDetailScreen(
 
     Scaffold(
         topBar = {
-            HeaderBar(title = floor.name, subtitle = "Survey Areas", onBackClick = onBackClick)
+            HeaderBar(title = floor.name, subtitle = "${floor.name} › Survey Areas", onBackClick = onBackClick)
         },
         floatingActionButton = {
             if (isOwnerAdmin) {
@@ -436,10 +432,7 @@ fun FloorDetailScreen(
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize().padding(Spacing.lg)) {
-                if (!error.isNullOrBlank()) {
-                    ErrorMessage(message = error ?: "")
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                }
+                OfflineBanner(isOffline = isOffline, hasCachedData = surveyAreas.isNotEmpty())
 
                 if (surveyAreas.isEmpty() && !isLoading) {
                     EmptyStateText(message = "No survey areas found on this floor.")
