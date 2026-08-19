@@ -2,13 +2,13 @@ import uuid
 from datetime import datetime, timezone
 from typing import List, Tuple
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.auth import get_current_user
 from app.core.database import get_db
-from app.models.domain import Building, Floor, Project, ProjectMember, Survey, SurveyArea, User
-from app.schemas.survey import SurveyCreate, SurveyOut, SurveyUpdate
+from app.models.domain import Building, Floor, Project, ProjectMember, ScanCycle, Survey, SurveyArea, User, WifiObservation
+from app.schemas.survey import AccessPointOut, ChannelOut, ObservationOut, SurveyCreate, SurveyOut, SurveyUpdate
 
 router = APIRouter(tags=["surveys"])
 
@@ -142,3 +142,118 @@ def update_survey(
         db.refresh(survey)
 
     return survey
+
+
+# STAGE J: Approved D034 Raw Evidence Query Routes
+@router.get("/surveys/{survey_id}/access-points", response_model=List[AccessPointOut])
+def get_survey_access_points(
+    survey_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_survey_authorization(db, survey_id, current_user)
+
+    stmt = (
+        select(
+            WifiObservation.bssid,
+            func.max(WifiObservation.ssid).label("ssid"),
+            func.count(WifiObservation.id).label("observation_count"),
+            func.max(WifiObservation.rssi_dbm).label("max_rssi"),
+            func.avg(WifiObservation.rssi_dbm).label("avg_rssi"),
+            func.max(WifiObservation.frequency_mhz).label("latest_frequency"),
+        )
+        .join(ScanCycle, WifiObservation.scan_cycle_id == ScanCycle.id)
+        .where(ScanCycle.survey_id == survey_id)
+        .group_by(WifiObservation.bssid)
+        .order_by(func.count(WifiObservation.id).desc())
+    )
+
+    rows = db.execute(stmt).all()
+    return [
+        AccessPointOut(
+            bssid=row.bssid,
+            ssid=row.ssid,
+            observation_count=row.observation_count,
+            max_rssi=row.max_rssi,
+            avg_rssi=float(row.avg_rssi),
+            latest_frequency=row.latest_frequency,
+        )
+        for row in rows
+    ]
+
+
+@router.get("/surveys/{survey_id}/channels", response_model=List[ChannelOut])
+def get_survey_channels(
+    survey_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_survey_authorization(db, survey_id, current_user)
+
+    stmt = (
+        select(
+            WifiObservation.channel,
+            WifiObservation.frequency_mhz,
+            func.count(WifiObservation.id).label("observation_count"),
+            func.count(func.distinct(WifiObservation.bssid)).label("ap_count"),
+        )
+        .join(ScanCycle, WifiObservation.scan_cycle_id == ScanCycle.id)
+        .where(ScanCycle.survey_id == survey_id)
+        .group_by(WifiObservation.channel, WifiObservation.frequency_mhz)
+        .order_by(WifiObservation.frequency_mhz.asc())
+    )
+
+    rows = db.execute(stmt).all()
+    return [
+        ChannelOut(
+            channel=row.channel,
+            frequency_mhz=row.frequency_mhz,
+            observation_count=row.observation_count,
+            ap_count=row.ap_count,
+        )
+        for row in rows
+    ]
+
+
+@router.get("/surveys/{survey_id}/observations", response_model=List[ObservationOut])
+def get_survey_observations(
+    survey_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_survey_authorization(db, survey_id, current_user)
+
+    stmt = (
+        select(
+            WifiObservation.id,
+            WifiObservation.scan_cycle_id,
+            WifiObservation.bssid,
+            WifiObservation.ssid,
+            WifiObservation.rssi_dbm,
+            WifiObservation.frequency_mhz,
+            WifiObservation.channel,
+            WifiObservation.channel_source,
+            WifiObservation.capabilities,
+            ScanCycle.captured_at_wallclock,
+        )
+        .join(ScanCycle, WifiObservation.scan_cycle_id == ScanCycle.id)
+        .where(ScanCycle.survey_id == survey_id)
+        .order_by(ScanCycle.captured_at_wallclock.desc())
+    )
+
+    rows = db.execute(stmt).all()
+    return [
+        ObservationOut(
+            id=row.id,
+            scan_cycle_id=row.scan_cycle_id,
+            bssid=row.bssid,
+            ssid=row.ssid,
+            rssi_dbm=row.rssi_dbm,
+            frequency_mhz=row.frequency_mhz,
+            channel=row.channel,
+            channel_source=row.channel_source,
+            capabilities=row.capabilities,
+            captured_at_wallclock=row.captured_at_wallclock,
+        )
+        for row in rows
+    ]

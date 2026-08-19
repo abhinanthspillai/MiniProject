@@ -42,3 +42,32 @@ class SurveyOut(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AccessPointOut(BaseModel):
+    bssid: str
+    ssid: Optional[str] = None
+    observation_count: int
+    max_rssi: int
+    avg_rssi: float
+    latest_frequency: int
+
+
+class ChannelOut(BaseModel):
+    channel: Optional[int] = None
+    frequency_mhz: int
+    observation_count: int
+    ap_count: int
+
+
+class ObservationOut(BaseModel):
+    id: uuid.UUID
+    scan_cycle_id: uuid.UUID
+    bssid: str
+    ssid: Optional[str] = None
+    rssi_dbm: int
+    frequency_mhz: int
+    channel: Optional[int] = None
+    channel_source: str
+    capabilities: Optional[str] = None
+    captured_at_wallclock: datetime
