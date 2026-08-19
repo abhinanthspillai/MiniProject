@@ -25,6 +25,9 @@ interface SurveyDao {
     @Query("SELECT * FROM surveys WHERE surveyAreaId = :surveyAreaId ORDER BY createdAt DESC")
     suspend fun getSurveysForArea(surveyAreaId: UUID): List<SurveyEntity>
 
+    @Query("SELECT * FROM surveys ORDER BY createdAt DESC")
+    suspend fun getAllSurveys(): List<SurveyEntity>
+
     @Query("UPDATE surveys SET status = :status, completedAt = :completedAt, updatedAt = :updatedAt WHERE id = :id")
     suspend fun updateSurveyCompletion(id: UUID, status: String, completedAt: Long, updatedAt: Long)
 

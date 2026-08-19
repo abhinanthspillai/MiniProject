@@ -19,6 +19,7 @@ interface SurveyRepository {
     ): Result<SurveyEntity>
 
     suspend fun getSurveysForArea(surveyAreaId: UUID): Result<List<SurveyEntity>>
+    suspend fun getAllSurveys(): Result<List<SurveyEntity>>
     suspend fun getSurvey(surveyId: UUID): Result<SurveyEntity?>
     suspend fun completeSurvey(surveyId: UUID): Result<SurveyEntity>
 }
@@ -93,6 +94,14 @@ class SurveyRepositoryImpl(
         } catch (e: Exception) {
             // Offline fallback to local Room cache
             Result.success(surveyDao.getSurveysForArea(surveyAreaId))
+        }
+    }
+
+    override suspend fun getAllSurveys(): Result<List<SurveyEntity>> {
+        return try {
+            Result.success(surveyDao.getAllSurveys())
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 

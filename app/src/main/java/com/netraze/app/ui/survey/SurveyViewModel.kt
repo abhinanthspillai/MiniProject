@@ -46,6 +46,22 @@ class SurveyViewModel @Inject constructor(
         }
     }
 
+    fun loadAllSurveys() {
+        val repo = surveyRepository ?: return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            val result = repo.getAllSurveys()
+            if (result.isSuccess) {
+                _uiState.value = SurveysUiState(surveys = result.getOrDefault(emptyList()), isLoading = false)
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = result.exceptionOrNull()?.message ?: "Failed to load surveys"
+                )
+            }
+        }
+    }
+
     fun createSurvey(
         surveyAreaId: UUID,
         title: String,
@@ -60,7 +76,7 @@ class SurveyViewModel @Inject constructor(
             val result = repo.createSurvey(surveyAreaId, title, mode, floorPlanId, simpleMapId)
             if (result.isSuccess) {
                 val survey = result.getOrThrow()
-                loadSurveys(surveyAreaId)
+                loadAllSurveys()
                 onSuccess(survey)
             } else {
                 _uiState.value = _uiState.value.copy(

@@ -8,8 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AccountTree
+import androidx.compose.material.icons.rounded.Assignment
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -42,10 +43,13 @@ import com.netraze.app.ui.canvas.SurveyCanvasScreen
 import com.netraze.app.ui.canvas.SurveyCanvasViewModel
 import com.netraze.app.ui.dashboard.DashboardHomeScreen
 import com.netraze.app.ui.hierarchy.BuildingDetailScreen
+import com.netraze.app.ui.hierarchy.CompactLocationSelectorDialog
 import com.netraze.app.ui.hierarchy.FloorDetailScreen
 import com.netraze.app.ui.hierarchy.HierarchyViewModel
+import com.netraze.app.ui.hierarchy.LocationsTabScreen
 import com.netraze.app.ui.hierarchy.ProjectDetailScreen
 import com.netraze.app.ui.hierarchy.ProjectsScreen
+import com.netraze.app.ui.survey.AllSurveysTabScreen
 import com.netraze.app.ui.survey.SurveyViewModel
 import com.netraze.app.ui.survey.SurveysScreen
 import com.netraze.app.ui.theme.NetrazeTheme
@@ -57,13 +61,15 @@ import javax.inject.Inject
 
 sealed class ScreenState {
     object Dashboard : ScreenState()
+    object AllSurveys : ScreenState()
+    object Locations : ScreenState()
     object Account : ScreenState()
     object Projects : ScreenState()
     data class ProjectDetail(val project: ProjectEntity) : ScreenState()
     data class BuildingDetail(val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
     data class FloorDetail(val floor: FloorEntity, val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
     data class Surveys(val surveyArea: SurveyAreaEntity, val floor: FloorEntity, val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
-    data class SurveyCanvas(val survey: SurveyEntity, val surveyArea: SurveyAreaEntity, val floor: FloorEntity, val building: BuildingEntity, val project: ProjectEntity) : ScreenState()
+    data class SurveyCanvas(val survey: SurveyEntity, val surveyArea: SurveyAreaEntity?, val floor: FloorEntity?, val building: BuildingEntity?, val project: ProjectEntity?) : ScreenState()
 }
 
 @AndroidEntryPoint
@@ -114,12 +120,16 @@ class MainActivity : ComponentActivity() {
                     color = SurfaceLight
                 ) {
                     val authState by loginViewModel.authState.collectAsStateWithLifecycle()
+                    val surveysState by surveyViewModel.uiState.collectAsStateWithLifecycle()
                     var currentScreen by remember { mutableStateOf<ScreenState>(ScreenState.Dashboard) }
+                    var showLocationSelector by remember { mutableStateOf(false) }
 
                     if (authState.isAuthenticated) {
                         val email = authState.userProfile?.email ?: authState.session?.email ?: "Unknown"
                         val role = authState.userProfile?.role ?: authState.session?.role ?: "Unknown"
                         val userId = (authState.userProfile?.id ?: authState.session?.userId)?.toString() ?: "Unknown"
+
+                        val recentSurvey = surveysState.surveys.firstOrNull()
 
                         Scaffold(
                             bottomBar = {
@@ -127,12 +137,12 @@ class MainActivity : ComponentActivity() {
                                     containerColor = SurfaceLight
                                 ) {
                                     val isHome = currentScreen is ScreenState.Dashboard
-                                    val isHierarchy = currentScreen is ScreenState.Projects ||
+                                    val isAllSurveys = currentScreen is ScreenState.AllSurveys
+                                    val isLocations = currentScreen is ScreenState.Locations ||
+                                            currentScreen is ScreenState.Projects ||
                                             currentScreen is ScreenState.ProjectDetail ||
                                             currentScreen is ScreenState.BuildingDetail ||
-                                            currentScreen is ScreenState.FloorDetail ||
-                                            currentScreen is ScreenState.Surveys ||
-                                            currentScreen is ScreenState.SurveyCanvas
+                                            currentScreen is ScreenState.FloorDetail
                                     val isAccount = currentScreen is ScreenState.Account
 
                                     NavigationBarItem(
@@ -148,10 +158,22 @@ class MainActivity : ComponentActivity() {
                                         )
                                     )
                                     NavigationBarItem(
-                                        selected = isHierarchy,
-                                        onClick = { currentScreen = ScreenState.Projects },
-                                        icon = { Icon(imageVector = Icons.Rounded.AccountTree, contentDescription = "Hierarchy") },
-                                        label = { Text("Hierarchy") },
+                                        selected = isAllSurveys,
+                                        onClick = { currentScreen = ScreenState.AllSurveys },
+                                        icon = { Icon(imageVector = Icons.Rounded.Assignment, contentDescription = "Surveys") },
+                                        label = { Text("Surveys") },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = PrimaryBlue,
+                                            selectedTextColor = PrimaryBlue,
+                                            unselectedIconColor = TextSecondary,
+                                            unselectedTextColor = TextSecondary
+                                        )
+                                    )
+                                    NavigationBarItem(
+                                        selected = isLocations,
+                                        onClick = { currentScreen = ScreenState.Locations },
+                                        icon = { Icon(imageVector = Icons.Rounded.LocationOn, contentDescription = "Locations") },
+                                        label = { Text("Locations") },
                                         colors = NavigationBarItemDefaults.colors(
                                             selectedIconColor = PrimaryBlue,
                                             selectedTextColor = PrimaryBlue,
@@ -180,8 +202,32 @@ class MainActivity : ComponentActivity() {
                                         DashboardHomeScreen(
                                             email = email,
                                             role = role,
-                                            onBrowseProjects = { currentScreen = ScreenState.Projects },
-                                            onStartSurveyShortcut = { currentScreen = ScreenState.Projects }
+                                            recentSurvey = recentSurvey,
+                                            onStartSurveyClick = { showLocationSelector = true },
+                                            onContinueSurveyClick = { survey ->
+                                                currentScreen = ScreenState.SurveyCanvas(survey, null, null, null, null)
+                                            },
+                                            onBrowseLocations = { currentScreen = ScreenState.Locations }
+                                        )
+                                    }
+                                    is ScreenState.AllSurveys -> {
+                                        AllSurveysTabScreen(
+                                            viewModel = surveyViewModel,
+                                            onSurveyClick = { survey ->
+                                                currentScreen = ScreenState.SurveyCanvas(survey, null, null, null, null)
+                                            },
+                                            onStartSurveyClick = { showLocationSelector = true }
+                                        )
+                                    }
+                                    is ScreenState.Locations -> {
+                                        LocationsTabScreen(
+                                            viewModel = hierarchyViewModel,
+                                            userRole = role,
+                                            currentUserId = userId,
+                                            onProjectClick = { project ->
+                                                currentScreen = ScreenState.ProjectDetail(project)
+                                            },
+                                            onManageLocationsClick = { currentScreen = ScreenState.Projects }
                                         )
                                     }
                                     is ScreenState.Account -> {
@@ -202,7 +248,7 @@ class MainActivity : ComponentActivity() {
                                             onProjectClick = { project ->
                                                 currentScreen = ScreenState.ProjectDetail(project)
                                             },
-                                            onBackClick = { currentScreen = ScreenState.Dashboard }
+                                            onBackClick = { currentScreen = ScreenState.Locations }
                                         )
                                     }
                                     is ScreenState.ProjectDetail -> {
@@ -214,7 +260,7 @@ class MainActivity : ComponentActivity() {
                                             onBuildingClick = { building ->
                                                 currentScreen = ScreenState.BuildingDetail(building, screen.project)
                                             },
-                                            onBackClick = { currentScreen = ScreenState.Projects }
+                                            onBackClick = { currentScreen = ScreenState.Locations }
                                         )
                                     }
                                     is ScreenState.BuildingDetail -> {
@@ -260,9 +306,26 @@ class MainActivity : ComponentActivity() {
                                         SurveyCanvasScreen(
                                             viewModel = surveyCanvasViewModel,
                                             surveyId = screen.survey.id,
-                                            onBackClick = { currentScreen = ScreenState.Surveys(screen.surveyArea, screen.floor, screen.building, screen.project) }
+                                            onBackClick = {
+                                                if (screen.surveyArea != null && screen.floor != null && screen.building != null && screen.project != null) {
+                                                    currentScreen = ScreenState.Surveys(screen.surveyArea, screen.floor, screen.building, screen.project)
+                                                } else {
+                                                    currentScreen = ScreenState.AllSurveys
+                                                }
+                                            }
                                         )
                                     }
+                                }
+
+                                if (showLocationSelector) {
+                                    CompactLocationSelectorDialog(
+                                        viewModel = hierarchyViewModel,
+                                        onDismiss = { showLocationSelector = false },
+                                        onLocationSelected = { area, floor, building, project ->
+                                            showLocationSelector = false
+                                            currentScreen = ScreenState.Surveys(area, floor, building, project)
+                                        }
+                                    )
                                 }
                             }
                         }
