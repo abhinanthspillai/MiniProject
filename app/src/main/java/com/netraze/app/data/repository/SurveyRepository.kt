@@ -6,6 +6,7 @@ import com.netraze.app.data.remote.api.SurveyApi
 import com.netraze.app.data.remote.dto.CreateSurveyRequestDto
 import com.netraze.app.data.remote.dto.SurveyDto
 import com.netraze.app.data.security.SecureSessionStore
+import com.netraze.app.data.sync.SyncManager
 import java.util.UUID
 
 interface SurveyRepository {
@@ -19,12 +20,14 @@ interface SurveyRepository {
 
     suspend fun getSurveysForArea(surveyAreaId: UUID): Result<List<SurveyEntity>>
     suspend fun getSurvey(surveyId: UUID): Result<SurveyEntity?>
+    suspend fun completeSurvey(surveyId: UUID): Result<SurveyEntity>
 }
 
 class SurveyRepositoryImpl(
     private val surveyApi: SurveyApi,
     private val surveyDao: SurveyDao,
-    private val sessionStore: SecureSessionStore
+    private val sessionStore: SecureSessionStore,
+    private val syncManager: SyncManager? = null
 ) : SurveyRepository {
 
     override suspend fun createSurvey(
@@ -101,6 +104,24 @@ class SurveyRepositoryImpl(
             Result.success(entity)
         } catch (e: Exception) {
             Result.success(surveyDao.getSurveyById(surveyId))
+        }
+    }
+
+    override suspend fun completeSurvey(surveyId: UUID): Result<SurveyEntity> {
+        // D080 Completion Barrier: Drain pending sync FIRST
+        syncManager?.drainPendingSync(surveyId)
+
+        val now = System.currentTimeMillis()
+        return try {
+            val remoteDto = surveyApi.completeSurvey(surveyId)
+            val updatedEntity = remoteDto.toEntity()
+            surveyDao.upsertSurvey(updatedEntity)
+            Result.success(updatedEntity)
+        } catch (e: Exception) {
+            // Local fallback completion
+            surveyDao.updateSurveyCompletion(surveyId, "completed", now, now)
+            val local = surveyDao.getSurveyById(surveyId)
+            if (local != null) Result.success(local) else Result.failure(e)
         }
     }
 

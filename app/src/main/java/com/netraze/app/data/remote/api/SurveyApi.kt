@@ -33,4 +33,9 @@ interface SurveyApi {
         @Path("surveyId") surveyId: UUID,
         @Body request: UpdateSurveyRequestDto
     ): SurveyDto
+
+    @POST("api/v1/surveys/{surveyId}/complete")
+    suspend fun completeSurvey(
+        @Path("surveyId") surveyId: UUID
+    ): SurveyDto
 }

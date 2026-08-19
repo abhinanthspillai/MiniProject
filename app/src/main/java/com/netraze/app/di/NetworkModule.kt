@@ -104,16 +104,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideSurveyRepository(
-        surveyApi: SurveyApi,
-        surveyDao: SurveyDao,
-        sessionStore: SecureSessionStore
-    ): SurveyRepository {
-        return SurveyRepositoryImpl(surveyApi, surveyDao, sessionStore)
-    }
-
-    @Provides
-    @Singleton
     fun provideSyncApi(retrofit: Retrofit): SyncApi {
         return retrofit.create(SyncApi::class.java)
     }
@@ -128,5 +118,16 @@ object NetworkModule {
         wifiObservationDao: WifiObservationDao
     ): SyncManager {
         return SyncManager(syncApi, surveyDao, spatialPositionDao, scanCycleDao, wifiObservationDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSurveyRepository(
+        surveyApi: SurveyApi,
+        surveyDao: SurveyDao,
+        sessionStore: SecureSessionStore,
+        syncManager: SyncManager
+    ): SurveyRepository {
+        return SurveyRepositoryImpl(surveyApi, surveyDao, sessionStore, syncManager)
     }
 }

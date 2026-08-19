@@ -135,11 +135,42 @@ def update_survey(
     if not is_member and not is_owner:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to modify this survey")
 
+    if survey.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Survey is completed and frozen. Further modifications are prohibited."
+        )
+
     if payload.title is not None:
         survey.title = payload.title
         survey.updated_at = utc_now()
         db.commit()
         db.refresh(survey)
+
+    return survey
+
+
+# STAGE K: Approved D080 Completion Barrier Endpoint
+@router.post("/surveys/{survey_id}/complete", response_model=SurveyOut, status_code=status.HTTP_200_OK)
+def complete_survey(
+    survey_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    survey, _, is_owner, is_member = _get_survey_authorization(db, survey_id, current_user)
+
+    if not is_member and not is_owner:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to complete this survey")
+
+    if survey.status == "completed":
+        return survey
+
+    now = utc_now()
+    survey.status = "completed"
+    survey.completed_at = now
+    survey.updated_at = now
+    db.commit()
+    db.refresh(survey)
 
     return survey
 

@@ -110,6 +110,7 @@ class SurveyRepositoryTest {
         override suspend fun getSurveysForArea(surveyAreaId: UUID): List<SurveyDto> = emptyList()
         override suspend fun getSurvey(surveyId: UUID): SurveyDto = TODO()
         override suspend fun updateSurvey(surveyId: UUID, request: UpdateSurveyRequestDto): SurveyDto = TODO()
+        override suspend fun completeSurvey(surveyId: UUID): SurveyDto = TODO()
     }
 
     private class FakeSurveyDao : SurveyDao {
