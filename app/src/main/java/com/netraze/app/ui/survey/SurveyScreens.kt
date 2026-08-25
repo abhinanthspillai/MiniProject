@@ -1,8 +1,8 @@
 package com.netraze.app.ui.survey
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,23 +11,28 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Business
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.Navigation
 import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.Science
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -40,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,34 +54,18 @@ import com.netraze.app.data.local.entity.ProjectEntity
 import com.netraze.app.data.local.entity.SurveyAreaEntity
 import com.netraze.app.data.local.entity.SurveyEntity
 import com.netraze.app.ui.components.AppTextField
+import com.netraze.app.ui.components.InfoCard
 import com.netraze.app.ui.components.PrimaryButton
-import com.netraze.app.ui.theme.FormSurfaceBlue
 import com.netraze.app.ui.theme.NetrazeTypography
-import com.netraze.app.ui.theme.PrimaryBlue
-import com.netraze.app.ui.theme.Spacing
+import com.netraze.app.ui.theme.PrimaryDark
 import com.netraze.app.ui.theme.SurfaceLight
-import com.netraze.app.ui.theme.TextOnBlue
+import com.netraze.app.ui.theme.TextPrimary
 import com.netraze.app.ui.theme.TextSecondary
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HeaderBar(title: String, subtitle: String, onBackClick: () -> Unit) {
-    TopAppBar(
-        title = {
-            Column {
-                Text(text = title, style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold)
-                Text(text = subtitle, style = NetrazeTypography.bodySmall, color = TextSecondary)
-            }
-        },
-        navigationIcon = {
-            IconButton(onClick = onBackClick) {
-                Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = PrimaryBlue)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
-    )
-}
-
 @Composable
 fun SurveysScreen(
     viewModel: SurveyViewModel,
@@ -93,72 +83,137 @@ fun SurveysScreen(
         viewModel.loadSurveys(surveyArea.id)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(Spacing.lg)
-    ) {
-        HeaderBar(
-            title = surveyArea.name,
-            subtitle = "${project.name} › ${surveyArea.name} › Surveys",
-            onBackClick = onBackClick
-        )
-
-        Spacer(modifier = Modifier.height(Spacing.lg))
-
-        PrimaryButton(
-            text = "+ Start New Survey",
-            onClick = { showCreateDialog = true }
-        )
-
-        Spacer(modifier = Modifier.height(Spacing.lg))
-
-        if (uiState.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = PrimaryBlue)
-            }
-        } else if (uiState.error != null) {
-            Text(
-                text = uiState.error ?: "",
-                color = androidx.compose.ui.graphics.Color.Red,
-                style = NetrazeTypography.bodyMedium
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = surveyArea.name,
+                            style = NetrazeTypography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = "${project.name} › Surveys",
+                            style = NetrazeTypography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TextPrimary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
             )
-        } else if (uiState.surveys.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        },
+        containerColor = SurfaceLight
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp)
+        ) {
+            PrimaryButton(
+                text = "START NEW SURVEY",
+                onClick = { showCreateDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Rounded.Add,
+                containerColor = PrimaryDark,
+                contentColor = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            if (uiState.isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = PrimaryDark)
+                }
+            } else if (uiState.error != null) {
                 Text(
-                    text = "No surveys recorded for this area yet.\nTap '+ Start New Survey' to begin.",
-                    style = NetrazeTypography.bodyLarge,
-                    color = TextSecondary
+                    text = uiState.error ?: "",
+                    color = Color.Red,
+                    style = NetrazeTypography.bodyMedium
                 )
-            }
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                items(uiState.surveys) { survey ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSurveyClick(survey) },
-                        colors = CardDefaults.cardColors(containerColor = FormSurfaceBlue)
-                    ) {
-                        Column(modifier = Modifier.padding(Spacing.md)) {
-                            Text(
-                                text = if (survey.title.isNotBlank()) survey.title else "Untitled Survey",
-                                style = NetrazeTypography.titleMedium,
-                                color = TextOnBlue,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(Spacing.xs))
-                            Text(
-                                text = "Mode: ${survey.mode.replace("_", " ").uppercase()} | Status: ${survey.status.uppercase()}",
-                                style = NetrazeTypography.bodySmall,
-                                color = TextOnBlue
-                            )
-                            Spacer(modifier = Modifier.height(Spacing.xs))
-                            Text(
-                                text = "Sync State: ${survey.syncState.uppercase()}",
-                                style = NetrazeTypography.labelSmall,
-                                color = TextOnBlue
-                            )
+            } else if (uiState.surveys.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "No surveys recorded for this area yet.",
+                        style = NetrazeTypography.bodyLarge,
+                        color = TextSecondary
+                    )
+                }
+            } else {
+                InfoCard(isHighEmphasis = false, modifier = Modifier.fillMaxWidth()) {
+                    LazyColumn {
+                        itemsIndexed(uiState.surveys) { index, survey ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onSurveyClick(survey) }
+                                    .padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(Color.White, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = if (survey.mode == "location_survey") Icons.Rounded.Business else Icons.Rounded.Science,
+                                        contentDescription = "Icon",
+                                        tint = TextPrimary
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.width(16.dp))
+                                
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = survey.title.ifBlank { "Untitled Survey" },
+                                        style = NetrazeTypography.titleMedium,
+                                        color = TextPrimary
+                                    )
+                                    val formattedMode = survey.mode.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                                    Text(
+                                        text = formattedMode,
+                                        style = NetrazeTypography.bodyMedium,
+                                        color = TextSecondary
+                                    )
+                                }
+                                
+                                Column(horizontalAlignment = Alignment.End) {
+                                    val dateStr = SimpleDateFormat("dd MMM", Locale.getDefault()).format(Date(survey.updatedAt))
+                                    Text(
+                                        text = dateStr,
+                                        style = NetrazeTypography.bodyMedium,
+                                        color = TextSecondary
+                                    )
+                                    val displayStatus = if (survey.status == "completed" && survey.syncState == "synced") "Synced" else survey.status.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                                    Text(
+                                        text = displayStatus,
+                                        style = NetrazeTypography.labelSmall,
+                                        color = TextPrimary
+                                    )
+                                }
+                            }
+                            
+                            if (index < uiState.surveys.lastIndex) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(TextSecondary.copy(alpha = 0.2f))
+                                )
+                            }
                         }
                     }
                 }
@@ -192,101 +247,90 @@ fun CreateSurveyDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Start New Survey", style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold) },
+        containerColor = SurfaceLight,
+        title = { Text(text = "Start New Survey", style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold, color = TextPrimary) },
         text = {
             Column {
                 AppTextField(
                     value = title,
                     onValueChange = { title = it },
                     label = "Survey Title",
-                    placeholder = "e.g. Q3 Wi-Fi Audit"
+                    placeholder = "Enter survey title",
+                    modifier = Modifier.fillMaxWidth()
                 )
-
-                Spacer(modifier = Modifier.height(Spacing.md))
-                Text(text = "Select Survey Mode", style = NetrazeTypography.labelLarge, color = TextSecondary)
-                Spacer(modifier = Modifier.height(Spacing.sm))
-
-                SurveyModeCard(
-                    title = "Floor Plan Mode",
-                    subtitle = "Requires an existing floor-plan artifact for this survey area.",
-                    icon = Icons.Rounded.Map,
-                    isSelected = selectedMode == "floor_plan",
-                    onClick = { selectedMode = "floor_plan" }
-                )
-                Spacer(modifier = Modifier.height(Spacing.xs))
-                SurveyModeCard(
-                    title = "Simple Map Mode",
-                    subtitle = "Requires an existing Simple Map artifact for this survey area.",
-                    icon = Icons.Rounded.Navigation,
-                    isSelected = selectedMode == "simple_map",
-                    onClick = { selectedMode = "simple_map" }
-                )
-                Spacer(modifier = Modifier.height(Spacing.xs))
-                SurveyModeCard(
-                    title = "Location Survey Mode",
-                    subtitle = "Ready for the emulator working model; no map artifact is required.",
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Select Mode:", style = NetrazeTypography.labelMedium, color = TextPrimary)
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                SurveyModeOption(
+                    title = "Location Survey",
+                    description = "Dense AP data collection for an area",
                     icon = Icons.Rounded.Place,
-                    isSelected = selectedMode == "location_survey",
+                    selected = selectedMode == "location_survey",
                     onClick = { selectedMode = "location_survey" }
                 )
-
-                if (selectedMode != "location_survey") {
-                    Spacer(modifier = Modifier.height(Spacing.sm))
-                    Text(
-                        text = "This mode cannot be started from the emulator model until its required map artifact is selected. Choose Location Survey Mode for the current working flow.",
-                        style = NetrazeTypography.bodySmall,
-                        color = TextSecondary
-                    )
-                }
+                SurveyModeOption(
+                    title = "Floor Plan",
+                    description = "Collect data pinned to coordinates",
+                    icon = Icons.Rounded.Map,
+                    selected = selectedMode == "floor_plan",
+                    onClick = { selectedMode = "floor_plan" }
+                )
+                SurveyModeOption(
+                    title = "Simple Map",
+                    description = "Quick topology map without coordinates",
+                    icon = Icons.Rounded.Navigation,
+                    selected = selectedMode == "simple_map",
+                    onClick = { selectedMode = "simple_map" }
+                )
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(title.trim(), selectedMode) },
-                enabled = selectedMode == "location_survey"
+                onClick = { if (title.isNotBlank()) onConfirm(title.trim(), selectedMode) }
             ) {
-                Text("Start Survey", color = PrimaryBlue, fontWeight = FontWeight.Bold)
+                Text("Create", color = PrimaryDark, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = TextSecondary)
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) }
         }
     )
 }
 
 @Composable
-private fun SurveyModeCard(
+private fun SurveyModeOption(
     title: String,
-    subtitle: String,
+    description: String,
     icon: ImageVector,
-    isSelected: Boolean,
+    selected: Boolean,
     onClick: () -> Unit
 ) {
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .padding(vertical = 4.dp)
             .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) PrimaryBlue else TextSecondary.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(8.dp)
-            ),
-        colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+                width = if (selected) 2.dp else 1.dp,
+                color = if (selected) PrimaryDark else TextSecondary.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .background(if (selected) PrimaryDark.copy(alpha = 0.05f) else Color.Transparent, RoundedCornerShape(12.dp))
+            .clickable { onClick() }
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.padding(Spacing.sm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            RadioButton(selected = isSelected, onClick = onClick)
-            Spacer(modifier = Modifier.width(Spacing.xs))
-            Icon(imageVector = icon, contentDescription = title, tint = PrimaryBlue)
-            Spacer(modifier = Modifier.width(Spacing.sm))
-            Column {
-                Text(text = title, style = NetrazeTypography.labelLarge, fontWeight = FontWeight.Bold)
-                Text(text = subtitle, style = NetrazeTypography.bodySmall, color = TextSecondary)
-            }
+        RadioButton(
+            selected = selected,
+            onClick = null,
+            colors = RadioButtonDefaults.colors(selectedColor = PrimaryDark, unselectedColor = TextSecondary)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Icon(imageVector = icon, contentDescription = title, tint = if (selected) PrimaryDark else TextSecondary)
+        Spacer(modifier = Modifier.width(8.dp))
+        Column {
+            Text(text = title, style = NetrazeTypography.labelLarge, color = if (selected) PrimaryDark else TextPrimary)
+            Text(text = description, style = NetrazeTypography.bodySmall, color = TextSecondary)
         }
     }
 }

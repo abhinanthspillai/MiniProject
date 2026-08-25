@@ -24,7 +24,7 @@ def setup_survey_test_data():
             id=tech_id,
             email=f"tech_{tech_id.hex[:6]}@netraze.app",
             password_hash=get_password_hash("Password123!"),
-            role="survey_technician"
+            role="user"
         )
         session.add_all([admin, tech])
         session.commit()

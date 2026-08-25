@@ -29,11 +29,24 @@ class UserCreateRequest(BaseModel):
     @field_validator("role")
     @classmethod
     def validate_role(cls, v: str) -> str:
-        valid_roles = {"administrator", "survey_technician"}
+        valid_roles = {"administrator", "user"}
         role_clean = v.lower().strip()
         if role_clean not in valid_roles:
             raise ValueError(f"Invalid role: '{v}'. Must be one of {valid_roles}")
         return role_clean
+
+
+class PublicRegistrationRequest(BaseModel):
+    email: EmailStr
+    password: str
+    confirm_password: str
+
+    @field_validator("confirm_password")
+    @classmethod
+    def passwords_match(cls, v, info):
+        if "password" in info.data and v != info.data["password"]:
+            raise ValueError("Passwords do not match")
+        return v
 
 
 class ResetPasswordRequest(BaseModel):

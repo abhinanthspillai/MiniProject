@@ -26,6 +26,12 @@ data class CreateUserRequestDto(
     @SerializedName("role") val role: String
 )
 
+data class RegisterRequestDto(
+    @SerializedName("email") val email: String,
+    @SerializedName("password") val password: String,
+    @SerializedName("confirm_password") val confirm_password: String
+)
+
 data class ResetPasswordRequestDto(
     @SerializedName("target_email") val targetEmail: String,
     @SerializedName("new_password") val newPassword: String

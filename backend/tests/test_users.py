@@ -24,7 +24,7 @@ def setup_users_test_data():
             id=tech_id,
             email=f"tech_{tech_id.hex[:6]}@netraze.app",
             password_hash=get_password_hash("TechPass123!"),
-            role="survey_technician"
+            role="user"
         )
         session.add_all([admin, tech])
         session.commit()
@@ -46,7 +46,7 @@ def test_create_user_unauthorized_if_no_token():
     res = client.post("/api/v1/users", json={
         "email": "newuser@netraze.app",
         "password": "Password123!",
-        "role": "survey_technician"
+        "role": "user"
     })
     assert res.status_code == 401
 
@@ -58,7 +58,7 @@ def test_create_user_forbidden_if_not_administrator():
     res = client.post("/api/v1/users", json={
         "email": "newtech@netraze.app",
         "password": "Password123!",
-        "role": "survey_technician"
+        "role": "user"
     }, headers=headers)
 
     assert res.status_code == 403
@@ -72,13 +72,13 @@ def test_create_user_succeeds_for_administrator():
     res = client.post("/api/v1/users", json={
         "email": new_email,
         "password": "Password123!",
-        "role": "survey_technician"
+        "role": "user"
     }, headers=headers)
 
     assert res.status_code == 201
     res_data = res.json()
     assert res_data["email"] == new_email
-    assert res_data["role"] == "survey_technician"
+    assert res_data["role"] == "user"
 
     # Verify user can authenticate with new password
     login_res = client.post("/api/v1/auth/login", json={
@@ -96,7 +96,7 @@ def test_create_user_duplicate_email_rejected():
     res = client.post("/api/v1/users", json={
         "email": data["tech_email"],
         "password": "Password123!",
-        "role": "survey_technician"
+        "role": "user"
     }, headers=headers)
 
     assert res.status_code == 409

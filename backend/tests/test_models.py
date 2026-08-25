@@ -63,7 +63,7 @@ def test_survey_hierarchy_and_mode_constraint(db_session):
     tech = User(
         email=f"tech_{uuid.uuid4().hex[:6]}@netraze.app",
         password_hash="secret",
-        role="survey_technician"
+        role="user"
     )
     db_session.add_all([admin, tech])
     db_session.commit()
@@ -116,7 +116,7 @@ def test_survey_hierarchy_and_mode_constraint(db_session):
 
 def test_location_fix_one_to_one_constraint(db_session):
     admin = User(email=f"admin_{uuid.uuid4().hex[:6]}@netraze.app", password_hash="secret", role="administrator")
-    tech = User(email=f"tech_{uuid.uuid4().hex[:6]}@netraze.app", password_hash="secret", role="survey_technician")
+    tech = User(email=f"tech_{uuid.uuid4().hex[:6]}@netraze.app", password_hash="secret", role="user")
     db_session.add_all([admin, tech])
     db_session.commit()
 
@@ -171,7 +171,7 @@ def test_location_fix_one_to_one_constraint(db_session):
 
 def test_unbound_scan_cycle_and_multiple_same_bssid_observations(db_session):
     admin = User(email=f"admin_{uuid.uuid4().hex[:6]}@netraze.app", password_hash="secret", role="administrator")
-    tech = User(email=f"tech_{uuid.uuid4().hex[:6]}@netraze.app", password_hash="secret", role="survey_technician")
+    tech = User(email=f"tech_{uuid.uuid4().hex[:6]}@netraze.app", password_hash="secret", role="user")
     db_session.add_all([admin, tech])
     db_session.commit()
 

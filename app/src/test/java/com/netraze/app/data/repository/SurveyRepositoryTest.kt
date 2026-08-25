@@ -33,7 +33,7 @@ class SurveyRepositoryTest {
         mockSessionStore = Mockito.mock(SecureSessionStore::class.java)
         runBlocking {
             Mockito.`when`(mockSessionStore.getSession()).thenReturn(
-                AuthSession("fake_token", UUID.randomUUID(), "test@netraze.app", "survey_technician")
+                AuthSession("fake_token", UUID.randomUUID(), "test@netraze.app", "user")
             )
         }
         repository = SurveyRepositoryImpl(fakeApi, fakeDao, mockSessionStore)

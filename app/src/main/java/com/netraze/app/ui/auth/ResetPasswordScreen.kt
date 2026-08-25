@@ -1,8 +1,6 @@
 package com.netraze.app.ui.auth
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -20,8 +17,6 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,9 +27,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,16 +34,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.netraze.app.ui.components.AppTextField
+import com.netraze.app.ui.components.InfoCard
 import com.netraze.app.ui.components.PasswordField
 import com.netraze.app.ui.components.PrimaryButton
-import com.netraze.app.ui.theme.FormSurfaceBlue
 import com.netraze.app.ui.theme.NetrazeTypography
-import com.netraze.app.ui.theme.PrimaryBlue
-import com.netraze.app.ui.theme.Spacing
-import com.netraze.app.ui.theme.SuccessChipBackground
+import com.netraze.app.ui.theme.PrimaryDark
 import com.netraze.app.ui.theme.SuccessChipText
 import com.netraze.app.ui.theme.SurfaceLight
-import com.netraze.app.ui.theme.TextOnBlue
+import com.netraze.app.ui.theme.TextPrimary
 import com.netraze.app.ui.theme.TextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,9 +51,6 @@ fun ResetPasswordScreen(
     onBackToLogin: () -> Unit
 ) {
     val state by viewModel.resetPasswordState.collectAsStateWithLifecycle()
-    var isAdminPasswordVisible by remember { mutableStateOf(false) }
-    var isNewPasswordVisible by remember { mutableStateOf(false) }
-    var isConfirmPasswordVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -80,7 +67,7 @@ fun ResetPasswordScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = "Back to Login",
-                            tint = PrimaryBlue
+                            tint = PrimaryDark
                         )
                     }
                 },
@@ -93,18 +80,13 @@ fun ResetPasswordScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(Spacing.lg)
+                .padding(24.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(Spacing.lg)
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             // Error Banner
             if (!state.error.isNullOrBlank()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFFEF2F2), shape = RoundedCornerShape(8.dp))
-                        .padding(Spacing.md)
-                ) {
+                InfoCard(isHighEmphasis = false) {
                     Text(
                         text = state.error ?: "",
                         style = NetrazeTypography.bodySmall,
@@ -114,152 +96,128 @@ fun ResetPasswordScreen(
             }
 
             // Step 1: Administrator Verification
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = FormSurfaceBlue)
-            ) {
-                Column(modifier = Modifier.padding(Spacing.lg)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Rounded.Lock,
-                            contentDescription = "Admin Lock",
-                            tint = TextOnBlue
-                        )
-                        Spacer(modifier = Modifier.width(Spacing.sm))
-                        Text(
-                            text = "Step 1 — Administrator Verification",
-                            style = NetrazeTypography.titleSmall,
-                            color = TextOnBlue,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(Spacing.xs))
+            InfoCard(isHighEmphasis = true) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Lock,
+                        contentDescription = "Admin Lock",
+                        tint = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Administrator credentials are required to authorize password resets.",
-                        style = NetrazeTypography.bodySmall,
-                        color = TextOnBlue
+                        text = "Step 1 — Admin Verification",
+                        style = NetrazeTypography.titleSmall,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold
                     )
+                }
 
-                    Spacer(modifier = Modifier.height(Spacing.md))
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Administrator credentials are required to authorize password resets.",
+                    style = NetrazeTypography.bodySmall,
+                    color = TextSecondary
+                )
 
-                    AppTextField(
-                        value = state.adminEmail,
-                        onValueChange = { viewModel.updateResetPasswordForm(adminEmail = it) },
-                        label = "Administrator Email",
-                        placeholder = "admin@netraze.app",
-                        enabled = !state.isAdminVerified
-                    )
+                Spacer(modifier = Modifier.height(24.dp))
 
-                    Spacer(modifier = Modifier.height(Spacing.md))
+                AppTextField(
+                    value = state.adminEmail,
+                    onValueChange = { viewModel.updateResetPasswordAdminForm(adminEmail = it) },
+                    label = "Administrator Email",
+                    placeholder = "admin@netraze.app",
+                    enabled = !state.isAdminVerified
+                )
 
-                    PasswordField(
-                        value = state.adminPassword,
-                        onValueChange = { viewModel.updateResetPasswordForm(adminPassword = it) },
-                        label = "Administrator Password",
-                        placeholder = "••••••••",
-                        isPasswordVisible = isAdminPasswordVisible,
-                        onTogglePasswordVisibility = { isAdminPasswordVisible = !isAdminPasswordVisible },
-                        enabled = !state.isAdminVerified
-                    )
+                Spacer(modifier = Modifier.height(16.dp))
 
-                    Spacer(modifier = Modifier.height(Spacing.md))
+                PasswordField(
+                    value = state.adminPassword,
+                    onValueChange = { viewModel.updateResetPasswordAdminForm(adminPassword = it) },
+                    label = "Administrator Password",
+                    enabled = !state.isAdminVerified
+                )
 
-                    if (state.isAdminVerified) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(SuccessChipBackground, shape = RoundedCornerShape(8.dp))
-                                .padding(Spacing.md)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Rounded.CheckCircle,
-                                    contentDescription = "Verified",
-                                    tint = SuccessChipText
-                                )
-                                Spacer(modifier = Modifier.width(Spacing.sm))
-                                Text(
-                                    text = "Administrator Verified",
-                                    style = NetrazeTypography.labelLarge,
-                                    color = SuccessChipText,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
+                Spacer(modifier = Modifier.height(24.dp))
+
+                if (state.isAdminVerified) {
+                    InfoCard(isHighEmphasis = false) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.CheckCircle,
+                                contentDescription = "Verified",
+                                tint = SuccessChipText
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Administrator Verified",
+                                style = NetrazeTypography.labelLarge,
+                                color = SuccessChipText,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
-                    } else {
-                        PrimaryButton(
-                            text = if (state.isVerifyingAdmin) "Verifying..." else "Verify Administrator",
-                            onClick = { viewModel.verifyAdminCredentialsForReset() },
-                            enabled = !state.isVerifyingAdmin && state.adminEmail.isNotBlank() && state.adminPassword.isNotBlank(),
-                            modifier = Modifier.fillMaxWidth()
-                        )
                     }
+                } else {
+                    PrimaryButton(
+                        text = if (state.isVerifyingAdmin) "Verifying..." else "Verify Administrator",
+                        onClick = { viewModel.verifyAdminForResetPassword() },
+                        enabled = !state.isVerifyingAdmin && state.adminEmail.isNotBlank() && state.adminPassword.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
 
             // Step 2: User Account & New Password (Revealed after Admin verification)
             if (state.isAdminVerified) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = FormSurfaceBlue)
-                ) {
-                    Column(modifier = Modifier.padding(Spacing.lg)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Rounded.VpnKey,
-                                contentDescription = "Reset Key",
-                                tint = TextOnBlue
-                            )
-                            Spacer(modifier = Modifier.width(Spacing.sm))
-                            Text(
-                                text = "Step 2 — User Account & New Password",
-                                style = NetrazeTypography.titleSmall,
-                                color = TextOnBlue,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(Spacing.md))
-
-                        AppTextField(
-                            value = state.targetUserEmail,
-                            onValueChange = { viewModel.updateResetPasswordForm(targetUserEmail = it) },
-                            label = "User Email Address",
-                            placeholder = "user@netraze.app"
+                InfoCard(isHighEmphasis = true) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.VpnKey,
+                            contentDescription = "Reset Key",
+                            tint = TextPrimary
                         )
-
-                        Spacer(modifier = Modifier.height(Spacing.md))
-
-                        PasswordField(
-                            value = state.newPassword,
-                            onValueChange = { viewModel.updateResetPasswordForm(newPassword = it) },
-                            label = "New Password",
-                            placeholder = "••••••••",
-                            isPasswordVisible = isNewPasswordVisible,
-                            onTogglePasswordVisibility = { isNewPasswordVisible = !isNewPasswordVisible }
-                        )
-
-                        Spacer(modifier = Modifier.height(Spacing.md))
-
-                        PasswordField(
-                            value = state.confirmNewPassword,
-                            onValueChange = { viewModel.updateResetPasswordForm(confirmNewPassword = it) },
-                            label = "Confirm New Password",
-                            placeholder = "••••••••",
-                            isPasswordVisible = isConfirmPasswordVisible,
-                            onTogglePasswordVisibility = { isConfirmPasswordVisible = !isConfirmPasswordVisible }
-                        )
-
-                        Spacer(modifier = Modifier.height(Spacing.lg))
-
-                        PrimaryButton(
-                            text = if (state.isResettingPassword) "Resetting Password..." else "Reset Password",
-                            onClick = { viewModel.submitResetPassword { onBackToLogin() } },
-                            enabled = !state.isResettingPassword && state.targetUserEmail.isNotBlank() && state.newPassword.isNotBlank(),
-                            modifier = Modifier.fillMaxWidth()
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Step 2 — User Account & New Password",
+                            style = NetrazeTypography.titleSmall,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.Bold
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    AppTextField(
+                        value = state.targetUserEmail,
+                        onValueChange = { viewModel.updateResetPasswordForm(targetUserEmail = it) },
+                        label = "User Email Address",
+                        placeholder = "user@netraze.app"
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    PasswordField(
+                        value = state.newPassword,
+                        onValueChange = { viewModel.updateResetPasswordForm(newPassword = it) },
+                        label = "New Password"
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    PasswordField(
+                        value = state.confirmNewPassword,
+                        onValueChange = { viewModel.updateResetPasswordForm(confirmNewPassword = it) },
+                        label = "Confirm New Password"
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    PrimaryButton(
+                        text = if (state.isResettingPassword) "Resetting Password..." else "Reset Password",
+                        onClick = { viewModel.submitResetPassword() },
+                        enabled = !state.isResettingPassword && state.targetUserEmail.isNotBlank() && state.newPassword.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
 
@@ -274,17 +232,17 @@ fun ResetPasswordScreen(
 
     state.successMessage?.let { successMsg ->
         AlertDialog(
-            onDismissRequest = { viewModel.resetResetPasswordState() },
+            onDismissRequest = { viewModel.resetResetPasswordForm() },
             title = { Text("Password Reset Complete", style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold) },
             text = { Text(successMsg, style = NetrazeTypography.bodyMedium) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.resetResetPasswordState()
+                        viewModel.resetResetPasswordForm()
                         onBackToLogin()
                     }
                 ) {
-                    Text("Back to Login", color = PrimaryBlue, fontWeight = FontWeight.Bold)
+                    Text("Back to Login", color = PrimaryDark, fontWeight = FontWeight.Bold)
                 }
             }
         )

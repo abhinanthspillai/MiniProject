@@ -33,7 +33,7 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
-        CheckConstraint("role IN ('administrator', 'survey_technician')", name="ck_users_role"),
+        CheckConstraint("role IN ('administrator', 'user')", name="ck_users_role"),
     )
 
 

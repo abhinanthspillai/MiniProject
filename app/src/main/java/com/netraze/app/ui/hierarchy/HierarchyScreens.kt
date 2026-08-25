@@ -1,7 +1,7 @@
 package com.netraze.app.ui.hierarchy
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
@@ -21,14 +23,11 @@ import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -44,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,79 +52,108 @@ import com.netraze.app.data.local.entity.BuildingEntity
 import com.netraze.app.data.local.entity.FloorEntity
 import com.netraze.app.data.local.entity.ProjectEntity
 import com.netraze.app.data.local.entity.SurveyAreaEntity
+import com.netraze.app.ui.components.InfoCard
 import com.netraze.app.ui.components.OfflineBanner
-import com.netraze.app.ui.theme.FormSurfaceBlue
 import com.netraze.app.ui.theme.NetrazeTypography
-import com.netraze.app.ui.theme.PrimaryBlue
-import com.netraze.app.ui.theme.Spacing
+import com.netraze.app.ui.theme.PrimaryDark
 import com.netraze.app.ui.theme.SurfaceLight
-import com.netraze.app.ui.theme.TextOnBlue
+import com.netraze.app.ui.theme.TextPrimary
 import com.netraze.app.ui.theme.TextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HeaderBar(title: String, subtitle: String, onBackClick: () -> Unit) {
-    TopAppBar(
-        title = {
-            Column {
-                Text(text = title, style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold)
-                Text(text = subtitle, style = NetrazeTypography.bodySmall, color = TextSecondary)
-            }
+private fun HierarchyScreenLayout(
+    title: String,
+    subtitle: String,
+    onBackClick: () -> Unit,
+    fab: @Composable () -> Unit,
+    content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = title,
+                            style = NetrazeTypography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = subtitle,
+                            style = NetrazeTypography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TextPrimary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
+            )
         },
-        navigationIcon = {
-            IconButton(onClick = onBackClick) {
-                Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = PrimaryBlue)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
-    )
+        floatingActionButton = fab,
+        containerColor = SurfaceLight
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            content()
+        }
+    }
 }
 
 @Composable
-private fun HierarchyCard(
+private fun HierarchyCardContent(
     title: String,
     subtitle: String,
     icon: ImageVector,
     onClick: () -> Unit
 ) {
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = FormSurfaceBlue)
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.padding(Spacing.lg),
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .background(Color.White, CircleShape),
+            contentAlignment = Alignment.Center
         ) {
-            Icon(imageVector = icon, contentDescription = title, tint = TextOnBlue)
-            Spacer(modifier = Modifier.width(Spacing.md))
-            Column {
-                Text(text = title, style = NetrazeTypography.titleMedium, color = TextOnBlue, fontWeight = FontWeight.Bold)
-                Text(text = subtitle, style = NetrazeTypography.bodySmall, color = TextOnBlue)
-            }
+            Icon(imageVector = icon, contentDescription = title, tint = TextPrimary)
+        }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = NetrazeTypography.titleMedium, color = TextPrimary)
+            Text(text = subtitle, style = NetrazeTypography.bodyMedium, color = TextSecondary)
         }
     }
 }
 
 @Composable
 private fun EmptyStateText(message: String) {
-    Text(
-        text = message,
-        style = NetrazeTypography.bodyMedium,
-        color = TextSecondary,
-        modifier = Modifier.padding(vertical = Spacing.xl)
-    )
-}
-
-@Composable
-private fun ErrorMessage(message: String) {
-    Text(
-        text = message,
-        style = NetrazeTypography.bodyMedium,
-        color = MaterialTheme.colorScheme.error,
-        modifier = Modifier.padding(vertical = Spacing.sm)
-    )
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(
+            text = message,
+            style = NetrazeTypography.bodyMedium,
+            color = TextSecondary,
+            modifier = Modifier.padding(24.dp)
+        )
+    }
 }
 
 @Composable
@@ -135,10 +164,10 @@ private fun CreateEntityDialog(
     onConfirm: (String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = title, style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold) },
+        containerColor = SurfaceLight,
+        title = { Text(text = title, style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold, color = TextPrimary) },
         text = {
             OutlinedTextField(
                 value = name,
@@ -147,24 +176,22 @@ private fun CreateEntityDialog(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryBlue,
-                    focusedLabelColor = PrimaryBlue
+                    focusedBorderColor = PrimaryDark,
+                    focusedLabelColor = PrimaryDark,
+                    unfocusedTextColor = TextPrimary,
+                    focusedTextColor = TextPrimary
                 )
             )
         },
         confirmButton = {
             TextButton(
-                onClick = {
-                    if (name.isNotBlank()) onConfirm(name.trim())
-                }
+                onClick = { if (name.isNotBlank()) onConfirm(name.trim()) }
             ) {
-                Text("Create", color = PrimaryBlue, fontWeight = FontWeight.Bold)
+                Text("Create", color = PrimaryDark, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = TextSecondary)
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) }
         }
     )
 }
@@ -189,57 +216,42 @@ fun ProjectsScreen(
         viewModel.loadProjects()
     }
 
-    Scaffold(
-        topBar = {
-            HeaderBar(title = "Projects", subtitle = "Netraze Projects Hierarchy", onBackClick = onBackClick)
-        },
-        floatingActionButton = {
+    HierarchyScreenLayout(
+        title = "Projects",
+        subtitle = "Netraze Projects Hierarchy",
+        onBackClick = onBackClick,
+        fab = {
             if (isAdministrator) {
-                FloatingActionButton(
-                    onClick = { showCreateDialog = true },
-                    containerColor = PrimaryBlue
-                ) {
-                    Icon(imageVector = Icons.Rounded.Add, contentDescription = "Create Project", tint = TextOnBlue)
+                FloatingActionButton(onClick = { showCreateDialog = true }, containerColor = PrimaryDark, contentColor = Color.White) {
+                    Icon(imageVector = Icons.Rounded.Add, contentDescription = "Create Project")
                 }
             }
         }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize().padding(Spacing.lg)) {
+    ) {
+        Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+            if (isOffline) {
                 OfflineBanner(isOffline = isOffline, hasCachedData = projects.isNotEmpty())
-
-                if (projects.isEmpty() && !isLoading) {
-                    EmptyStateText(message = if (isAdministrator) "No projects found. Tap '+' to create a project." else "No projects available.")
-                } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        items(projects) { project ->
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            if (projects.isEmpty() && !isLoading) {
+                EmptyStateText(message = if (isAdministrator) "No projects found. Tap '+' to create." else "No projects available.")
+            } else if (projects.isNotEmpty()) {
+                InfoCard(isHighEmphasis = false, modifier = Modifier.fillMaxWidth()) {
+                    LazyColumn {
+                        itemsIndexed(projects) { index, project ->
                             val isOwner = (project.ownerId.toString() == currentUserId)
-                            val subtitle = if (isOwner) "Owner (Full Admin Access)" else "Member Access"
-                            HierarchyCard(
-                                title = project.name,
-                                subtitle = subtitle,
-                                icon = Icons.Rounded.Folder,
-                                onClick = { onProjectClick(project) }
-                            )
+                            HierarchyCardContent(title = project.name, subtitle = if (isOwner) "Owner Access" else "Member Access", icon = Icons.Rounded.Folder) {
+                                onProjectClick(project)
+                            }
+                            if (index < projects.lastIndex) Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(TextSecondary.copy(alpha = 0.2f)))
                         }
                     }
                 }
             }
-
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
-            }
-
-            if (showCreateDialog) {
-                CreateEntityDialog(
-                    title = "Create New Project",
-                    label = "Project Name",
-                    onDismiss = { showCreateDialog = false },
-                    onConfirm = { name ->
-                        viewModel.createProject(name) { showCreateDialog = false }
-                    }
-                )
-            }
+        }
+        if (isLoading) CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryDark)
+        if (showCreateDialog) {
+            CreateEntityDialog(title = "Create New Project", label = "Project Name", onDismiss = { showCreateDialog = false }, onConfirm = { name -> viewModel.createProject(name) { showCreateDialog = false } })
         }
     }
 }
@@ -257,63 +269,46 @@ fun ProjectDetailScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
-
-    val isOwnerAdmin = (userRole.lowercase() == "administrator" && project.ownerId.toString() == currentUserId)
+    val isAdministrator = (userRole.lowercase() == "administrator")
     val isOffline = !error.isNullOrBlank()
 
-    LaunchedEffect(project.id) {
-        viewModel.loadBuildings(project.id)
-    }
+    LaunchedEffect(project.id) { viewModel.loadBuildings(project.id) }
 
-    Scaffold(
-        topBar = {
-            HeaderBar(title = project.name, subtitle = "Project › Buildings", onBackClick = onBackClick)
-        },
-        floatingActionButton = {
-            if (isOwnerAdmin) {
-                FloatingActionButton(
-                    onClick = { showCreateDialog = true },
-                    containerColor = PrimaryBlue
-                ) {
-                    Icon(imageVector = Icons.Rounded.Add, contentDescription = "Create Building", tint = TextOnBlue)
+    HierarchyScreenLayout(
+        title = project.name,
+        subtitle = "Project › Buildings",
+        onBackClick = onBackClick,
+        fab = {
+            if (isAdministrator) {
+                FloatingActionButton(onClick = { showCreateDialog = true }, containerColor = PrimaryDark, contentColor = Color.White) {
+                    Icon(imageVector = Icons.Rounded.Add, contentDescription = "Create Building")
                 }
             }
         }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize().padding(Spacing.lg)) {
+    ) {
+        Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+            if (isOffline) {
                 OfflineBanner(isOffline = isOffline, hasCachedData = buildings.isNotEmpty())
-
-                if (buildings.isEmpty() && !isLoading) {
-                    EmptyStateText(message = "No buildings recorded for this project.")
-                } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        items(buildings) { building ->
-                            HierarchyCard(
-                                title = building.name,
-                                subtitle = "Building Entity",
-                                icon = Icons.Rounded.Apartment,
-                                onClick = { onBuildingClick(building) }
-                            )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            if (buildings.isEmpty() && !isLoading) {
+                EmptyStateText(message = if (isAdministrator) "No buildings found. Tap '+' to create." else "No buildings available.")
+            } else if (buildings.isNotEmpty()) {
+                InfoCard(isHighEmphasis = false, modifier = Modifier.fillMaxWidth()) {
+                    LazyColumn {
+                        itemsIndexed(buildings) { index, building ->
+                            HierarchyCardContent(title = building.name, subtitle = "Building", icon = Icons.Rounded.Apartment) {
+                                onBuildingClick(building)
+                            }
+                            if (index < buildings.lastIndex) Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(TextSecondary.copy(alpha = 0.2f)))
                         }
                     }
                 }
             }
-
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
-            }
-
-            if (showCreateDialog) {
-                CreateEntityDialog(
-                    title = "Create New Building",
-                    label = "Building Name",
-                    onDismiss = { showCreateDialog = false },
-                    onConfirm = { name ->
-                        viewModel.createBuilding(project.id, name) { showCreateDialog = false }
-                    }
-                )
-            }
+        }
+        if (isLoading) CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryDark)
+        if (showCreateDialog) {
+            CreateEntityDialog(title = "Add Building", label = "Building Name", onDismiss = { showCreateDialog = false }, onConfirm = { name -> viewModel.createBuilding(project.id, name) { showCreateDialog = false } })
         }
     }
 }
@@ -332,63 +327,46 @@ fun BuildingDetailScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
-
-    val isOwnerAdmin = (userRole.lowercase() == "administrator" && project.ownerId.toString() == currentUserId)
+    val isAdministrator = (userRole.lowercase() == "administrator")
     val isOffline = !error.isNullOrBlank()
 
-    LaunchedEffect(building.id) {
-        viewModel.loadFloors(building.id)
-    }
+    LaunchedEffect(building.id) { viewModel.loadFloors(building.id) }
 
-    Scaffold(
-        topBar = {
-            HeaderBar(title = building.name, subtitle = "${project.name} › ${building.name} › Floors", onBackClick = onBackClick)
-        },
-        floatingActionButton = {
-            if (isOwnerAdmin) {
-                FloatingActionButton(
-                    onClick = { showCreateDialog = true },
-                    containerColor = PrimaryBlue
-                ) {
-                    Icon(imageVector = Icons.Rounded.Add, contentDescription = "Create Floor", tint = TextOnBlue)
+    HierarchyScreenLayout(
+        title = building.name,
+        subtitle = "${project.name} › Floors",
+        onBackClick = onBackClick,
+        fab = {
+            if (isAdministrator) {
+                FloatingActionButton(onClick = { showCreateDialog = true }, containerColor = PrimaryDark, contentColor = Color.White) {
+                    Icon(imageVector = Icons.Rounded.Add, contentDescription = "Create Floor")
                 }
             }
         }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize().padding(Spacing.lg)) {
+    ) {
+        Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+            if (isOffline) {
                 OfflineBanner(isOffline = isOffline, hasCachedData = floors.isNotEmpty())
-
-                if (floors.isEmpty() && !isLoading) {
-                    EmptyStateText(message = "No floors recorded for this building.")
-                } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        items(floors) { floor ->
-                            HierarchyCard(
-                                title = floor.name,
-                                subtitle = "Floor Entity",
-                                icon = Icons.Rounded.Layers,
-                                onClick = { onFloorClick(floor) }
-                            )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            if (floors.isEmpty() && !isLoading) {
+                EmptyStateText(message = if (isAdministrator) "No floors found. Tap '+' to create." else "No floors available.")
+            } else if (floors.isNotEmpty()) {
+                InfoCard(isHighEmphasis = false, modifier = Modifier.fillMaxWidth()) {
+                    LazyColumn {
+                        itemsIndexed(floors) { index, floor ->
+                            HierarchyCardContent(title = floor.name, subtitle = "Floor", icon = Icons.Rounded.Layers) {
+                                onFloorClick(floor)
+                            }
+                            if (index < floors.lastIndex) Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(TextSecondary.copy(alpha = 0.2f)))
                         }
                     }
                 }
             }
-
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
-            }
-
-            if (showCreateDialog) {
-                CreateEntityDialog(
-                    title = "Create New Floor",
-                    label = "Floor Name (e.g. Ground Floor, Lab Floor)",
-                    onDismiss = { showCreateDialog = false },
-                    onConfirm = { name ->
-                        viewModel.createFloor(building.id, name) { showCreateDialog = false }
-                    }
-                )
-            }
+        }
+        if (isLoading) CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryDark)
+        if (showCreateDialog) {
+            CreateEntityDialog(title = "Add Floor", label = "Floor Name", onDismiss = { showCreateDialog = false }, onConfirm = { name -> viewModel.createFloor(building.id, name) { showCreateDialog = false } })
         }
     }
 }
@@ -397,6 +375,7 @@ fun BuildingDetailScreen(
 fun FloorDetailScreen(
     viewModel: HierarchyViewModel,
     floor: FloorEntity,
+    building: BuildingEntity,
     project: ProjectEntity,
     userRole: String,
     currentUserId: String,
@@ -407,63 +386,46 @@ fun FloorDetailScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
-
-    val isOwnerAdmin = (userRole.lowercase() == "administrator" && project.ownerId.toString() == currentUserId)
+    val isAdministrator = (userRole.lowercase() == "administrator")
     val isOffline = !error.isNullOrBlank()
 
-    LaunchedEffect(floor.id) {
-        viewModel.loadSurveyAreas(floor.id)
-    }
+    LaunchedEffect(floor.id) { viewModel.loadSurveyAreas(floor.id) }
 
-    Scaffold(
-        topBar = {
-            HeaderBar(title = floor.name, subtitle = "${floor.name} › Survey Areas", onBackClick = onBackClick)
-        },
-        floatingActionButton = {
-            if (isOwnerAdmin) {
-                FloatingActionButton(
-                    onClick = { showCreateDialog = true },
-                    containerColor = PrimaryBlue
-                ) {
-                    Icon(imageVector = Icons.Rounded.Add, contentDescription = "Create Survey Area", tint = TextOnBlue)
+    HierarchyScreenLayout(
+        title = floor.name,
+        subtitle = "${project.name} › ${building.name} › Survey Areas",
+        onBackClick = onBackClick,
+        fab = {
+            if (isAdministrator) {
+                FloatingActionButton(onClick = { showCreateDialog = true }, containerColor = PrimaryDark, contentColor = Color.White) {
+                    Icon(imageVector = Icons.Rounded.Add, contentDescription = "Create Survey Area")
                 }
             }
         }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize().padding(Spacing.lg)) {
+    ) {
+        Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+            if (isOffline) {
                 OfflineBanner(isOffline = isOffline, hasCachedData = surveyAreas.isNotEmpty())
-
-                if (surveyAreas.isEmpty() && !isLoading) {
-                    EmptyStateText(message = "No survey areas found on this floor.")
-                } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        items(surveyAreas) { area ->
-                            HierarchyCard(
-                                title = area.name,
-                                subtitle = "Survey Area Entity",
-                                icon = Icons.Rounded.LocationOn,
-                                onClick = { onSurveyAreaClick(area) }
-                            )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            if (surveyAreas.isEmpty() && !isLoading) {
+                EmptyStateText(message = if (isAdministrator) "No survey areas found. Tap '+' to create." else "No survey areas available.")
+            } else if (surveyAreas.isNotEmpty()) {
+                InfoCard(isHighEmphasis = false, modifier = Modifier.fillMaxWidth()) {
+                    LazyColumn {
+                        itemsIndexed(surveyAreas) { index, area ->
+                            HierarchyCardContent(title = area.name, subtitle = "Survey Area", icon = Icons.Rounded.LocationOn) {
+                                onSurveyAreaClick(area)
+                            }
+                            if (index < surveyAreas.lastIndex) Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(TextSecondary.copy(alpha = 0.2f)))
                         }
                     }
                 }
             }
-
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
-            }
-
-            if (showCreateDialog) {
-                CreateEntityDialog(
-                    title = "Create New Survey Area",
-                    label = "Area Name (e.g. Lab 305, East Wing)",
-                    onDismiss = { showCreateDialog = false },
-                    onConfirm = { name ->
-                        viewModel.createSurveyArea(floor.id, name) { showCreateDialog = false }
-                    }
-                )
-            }
+        }
+        if (isLoading) CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryDark)
+        if (showCreateDialog) {
+            CreateEntityDialog(title = "Add Survey Area", label = "Area Name", onDismiss = { showCreateDialog = false }, onConfirm = { name -> viewModel.createSurveyArea(floor.id, name) { showCreateDialog = false } })
         }
     }
 }

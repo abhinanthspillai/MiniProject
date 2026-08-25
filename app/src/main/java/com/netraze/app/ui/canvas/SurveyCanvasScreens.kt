@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,8 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,13 +40,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.netraze.app.ui.components.InfoCard
 import com.netraze.app.ui.components.PrimaryButton
-import com.netraze.app.ui.theme.FormSurfaceBlue
 import com.netraze.app.ui.theme.NetrazeTypography
-import com.netraze.app.ui.theme.PrimaryBlue
-import com.netraze.app.ui.theme.Spacing
+import com.netraze.app.ui.theme.PrimaryDark
 import com.netraze.app.ui.theme.SurfaceLight
-import com.netraze.app.ui.theme.TextOnBlue
+import com.netraze.app.ui.theme.TextPrimary
 import com.netraze.app.ui.theme.TextSecondary
 import java.util.UUID
 
@@ -91,7 +89,8 @@ fun SurveyCanvasScreen(
                         Text(
                             text = survey?.title?.ifBlank { "Survey Workspace" } ?: "Survey Workspace",
                             style = NetrazeTypography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
                         )
                         Text(
                             text = "Mode: $modeText | Sync: $syncStateText | Status: ${survey?.status?.uppercase() ?: "IN_PROGRESS"}",
@@ -102,7 +101,7 @@ fun SurveyCanvasScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = PrimaryBlue)
+                        Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = TextPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
@@ -114,38 +113,33 @@ fun SurveyCanvasScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(Spacing.md)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Spatial Analytics Summary Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = FormSurfaceBlue)
-            ) {
+            InfoCard(isHighEmphasis = true) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(Spacing.md),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text(text = "Positions", style = NetrazeTypography.labelSmall, color = TextOnBlue)
-                        Text(text = "${uiState.positions.size}", style = NetrazeTypography.titleMedium, color = TextOnBlue, fontWeight = FontWeight.Bold)
+                        Text(text = "Positions", style = NetrazeTypography.labelSmall, color = TextPrimary)
+                        Text(text = "${uiState.positions.size}", style = NetrazeTypography.titleMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
                     }
                     Column {
-                        Text(text = "Observations", style = NetrazeTypography.labelSmall, color = TextOnBlue)
-                        Text(text = "${uiState.totalObservationsCount}", style = NetrazeTypography.titleMedium, color = TextOnBlue, fontWeight = FontWeight.Bold)
+                        Text(text = "Observations", style = NetrazeTypography.labelSmall, color = TextPrimary)
+                        Text(text = "${uiState.totalObservationsCount}", style = NetrazeTypography.titleMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
                     }
                     Column {
-                        Text(text = "Unique APs", style = NetrazeTypography.labelSmall, color = TextOnBlue)
-                        Text(text = "${uiState.uniqueBssidCount}", style = NetrazeTypography.titleMedium, color = TextOnBlue, fontWeight = FontWeight.Bold)
+                        Text(text = "Unique APs", style = NetrazeTypography.labelSmall, color = TextPrimary)
+                        Text(text = "${uiState.uniqueBssidCount}", style = NetrazeTypography.titleMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
                     }
                     Column {
-                        Text(text = "Max RSSI", style = NetrazeTypography.labelSmall, color = TextOnBlue)
+                        Text(text = "Max RSSI", style = NetrazeTypography.labelSmall, color = TextPrimary)
                         Text(
                             text = if (uiState.maxRssi != null) "${uiState.maxRssi} dBm" else "N/A",
                             style = NetrazeTypography.titleMedium,
-                            color = TextOnBlue,
+                            color = TextPrimary,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -154,20 +148,16 @@ fun SurveyCanvasScreen(
 
             // Emulator Device Notification Banner
             if (isEmulator) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = FormSurfaceBlue)
-                ) {
+                InfoCard(isHighEmphasis = false) {
                     Row(
-                        modifier = Modifier.padding(Spacing.md),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(imageVector = Icons.Rounded.Info, contentDescription = "Info", tint = TextOnBlue)
-                        Spacer(modifier = Modifier.width(Spacing.sm))
+                        Icon(imageVector = Icons.Rounded.Info, contentDescription = "Info", tint = TextPrimary)
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Wi-Fi field scanning is available on a physical Android device.",
                             style = NetrazeTypography.bodySmall,
-                            color = TextOnBlue
+                            color = TextPrimary
                         )
                     }
                 }
@@ -176,23 +166,25 @@ fun SurveyCanvasScreen(
             // Action Buttons Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Box(modifier = Modifier.weight(1f)) {
                     PrimaryButton(
-                        text = if (isEmulator) "Field Scan (Physical Only)" else if (uiState.isScanning) "Scanning..." else "+ Scan Wi-Fi Here",
+                        text = if (isEmulator) "Field Scan (Physical Only)" else if (uiState.isScanning) "Scanning..." else "+ Scan Wi-Fi",
                         onClick = {
                             if (!isEmulator) {
                                 viewModel.addPositionAndScan(surveyId = surveyId, mode = mode)
                             }
                         },
-                        enabled = !isEmulator && !uiState.isScanning
+                        enabled = !isEmulator && !uiState.isScanning,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
                 Box(modifier = Modifier.weight(1f)) {
                     PrimaryButton(
-                        text = "View Raw Evidence",
-                        onClick = { showRawEvidenceDialog = true }
+                        text = "Raw Evidence",
+                        onClick = { showRawEvidenceDialog = true },
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -205,12 +197,12 @@ fun SurveyCanvasScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = PrimaryBlue)
-                        Spacer(modifier = Modifier.height(Spacing.sm))
+                        CircularProgressIndicator(color = PrimaryDark)
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = if (uiState.isScanning) "Executing Wi-Fi scan cycle..." else "Loading data...",
                             style = NetrazeTypography.bodyMedium,
-                            color = PrimaryBlue,
+                            color = PrimaryDark,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -219,48 +211,42 @@ fun SurveyCanvasScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
-                        .background(FormSurfaceBlue)
-                        .padding(Spacing.md),
+                        .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = if (isEmulator)
-                            "Survey metadata and Room local persistence loaded.\nField Wi-Fi radio measurements require physical Android device hardware."
+                            "Survey metadata loaded.\nField Wi-Fi radio measurements require physical Android device hardware."
                         else
-                            "No spatial positions recorded yet.\nTap '+ Scan Wi-Fi Here' to add sampling positions.",
+                            "No spatial positions recorded yet.\nTap '+ Scan Wi-Fi' to add sampling positions.",
                         style = NetrazeTypography.bodyMedium,
-                        color = TextOnBlue
+                        color = TextSecondary
                     )
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(uiState.positions) { pos ->
                         val posLabel = pos.position.label ?: "Position"
                         val xVal = pos.position.floorPlanX ?: pos.position.simpleMapX ?: 0.0
                         val yVal = pos.position.floorPlanY ?: pos.position.simpleMapY ?: 0.0
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selectedPosition = pos
-                                },
-                            colors = CardDefaults.cardColors(containerColor = FormSurfaceBlue)
+                        InfoCard(
+                            isHighEmphasis = false,
+                            modifier = Modifier.fillMaxWidth().clickable { selectedPosition = pos }
                         ) {
-                            Column(modifier = Modifier.padding(Spacing.md)) {
+                            Column {
                                 Text(
                                     text = "$posLabel (X: $xVal, Y: $yVal)",
                                     style = NetrazeTypography.titleMedium,
-                                    color = TextOnBlue,
+                                    color = TextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
                                     text = "Observations recorded: ${pos.observations.size}",
                                     style = NetrazeTypography.bodySmall,
-                                    color = TextOnBlue
+                                    color = TextSecondary
                                 )
                             }
                         }
@@ -273,16 +259,17 @@ fun SurveyCanvasScreen(
     if (showRawEvidenceDialog) {
         AlertDialog(
             onDismissRequest = { showRawEvidenceDialog = false },
-            title = { Text("Raw Wi-Fi Evidence", style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold) },
+            containerColor = SurfaceLight,
+            title = { Text("Raw Wi-Fi Evidence", style = NetrazeTypography.titleLarge, fontWeight = FontWeight.Bold, color = TextPrimary) },
             text = {
                 if (uiState.positions.isEmpty()) {
-                    Text("No raw Wi-Fi evidence recorded for this survey.", style = NetrazeTypography.bodyMedium)
+                    Text("No raw Wi-Fi evidence recorded for this survey.", style = NetrazeTypography.bodyMedium, color = TextSecondary)
                 } else {
                     LazyColumn(modifier = Modifier.height(280.dp)) {
                         items(uiState.positions.flatMap { it.observations }) { obs ->
                             val chVal = obs.channel ?: "N/A"
-                            Column(modifier = Modifier.padding(vertical = Spacing.xs)) {
-                                Text(text = "SSID: ${obs.ssid ?: "Hidden"} | BSSID: ${obs.bssid}", style = NetrazeTypography.labelMedium, fontWeight = FontWeight.Bold)
+                            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                Text(text = "SSID: ${obs.ssid ?: "Hidden"} | BSSID: ${obs.bssid}", style = NetrazeTypography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                                 Text(text = "RSSI: ${obs.rssiDbm} dBm | Freq: ${obs.frequencyMhz} MHz | Ch: $chVal", style = NetrazeTypography.bodySmall, color = TextSecondary)
                             }
                         }
@@ -291,7 +278,7 @@ fun SurveyCanvasScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showRawEvidenceDialog = false }) {
-                    Text("Close", color = PrimaryBlue, fontWeight = FontWeight.Bold)
+                    Text("Close", color = PrimaryDark, fontWeight = FontWeight.Bold)
                 }
             }
         )

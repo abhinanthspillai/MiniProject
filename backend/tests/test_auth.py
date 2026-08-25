@@ -53,7 +53,7 @@ def test_login_success_and_token_issuance(db_session):
     user = User(
         email=email,
         password_hash=get_password_hash(password),
-        role="survey_technician"
+        role="user"
     )
     db_session.add(user)
     db_session.commit()
@@ -66,7 +66,7 @@ def test_login_success_and_token_issuance(db_session):
     assert data["token_type"] == "bearer"
     assert "refresh_token" not in data  # No refresh token per D090
     assert data["user"]["email"] == email
-    assert data["user"]["role"] == "survey_technician"
+    assert data["user"]["role"] == "user"
 
 
 def test_login_invalid_password_returns_generic_401(db_session):
@@ -117,3 +117,28 @@ def test_get_me_protected_endpoint(db_session):
     # Malformed Token
     response_bad_auth = client.get("/api/v1/auth/me", headers={"Authorization": "Bearer invalid_jwt_token_string"})
     assert response_bad_auth.status_code == 401
+
+
+def test_public_registration_success():
+    email = f"newuser_{uuid.uuid4().hex[:6]}@netraze.app"
+    response = client.post("/api/v1/auth/register", json={
+        "email": email,
+        "password": "SecurePassword123!",
+        "confirm_password": "SecurePassword123!"
+    })
+    
+    assert response.status_code == 201
+    data = response.json()
+    assert data["email"] == email
+    assert data["role"] == "user"
+
+
+def test_public_registration_passwords_mismatch():
+    email = f"newuser_{uuid.uuid4().hex[:6]}@netraze.app"
+    response = client.post("/api/v1/auth/register", json={
+        "email": email,
+        "password": "SecurePassword123!",
+        "confirm_password": "WrongPassword123!"
+    })
+    
+    assert response.status_code == 422

@@ -4,13 +4,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
-import com.netraze.app.ui.theme.Spacing
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun LoginForm(
@@ -18,8 +19,8 @@ fun LoginForm(
     onIdentityChange: (String) -> Unit,
     password: String,
     onPasswordChange: (String) -> Unit,
-    isPasswordVisible: Boolean,
-    onTogglePasswordVisibility: () -> Unit,
+    isPasswordVisible: Boolean, // Kept for compatibility but unused
+    onTogglePasswordVisibility: () -> Unit, // Kept for compatibility but unused
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
@@ -40,31 +41,30 @@ fun LoginForm(
             )
         )
 
-        Spacer(modifier = Modifier.height(Spacing.md))
+        Spacer(modifier = Modifier.height(16.dp))
 
         PasswordField(
             value = password,
             onValueChange = onPasswordChange,
             label = "Password",
-            placeholder = "Enter your password",
-            isPasswordVisible = isPasswordVisible,
-            onTogglePasswordVisibility = onTogglePasswordVisibility,
             enabled = !isLoading,
             isError = !errorMessage.isNullOrBlank(),
             imeAction = ImeAction.Done,
-            onImeAction = {
-                if (isLoginEnabled && !isLoading) {
-                    onSubmit()
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    if (isLoginEnabled && !isLoading) {
+                        onSubmit()
+                    }
                 }
-            }
+            )
         )
 
         if (!errorMessage.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(Spacing.md))
+            Spacer(modifier = Modifier.height(16.dp))
             ErrorMessage(message = errorMessage)
         }
 
-        Spacer(modifier = Modifier.height(Spacing.xl))
+        Spacer(modifier = Modifier.height(32.dp))
 
         PrimaryButton(
             text = "Sign In",

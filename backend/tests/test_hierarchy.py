@@ -51,7 +51,7 @@ def member_tech(db_session):
         id=uuid.uuid4(),
         email=f"member_tech_{uuid.uuid4().hex[:6]}@netraze.app",
         password_hash=get_password_hash("Password123!"),
-        role="survey_technician"
+        role="user"
     )
     db_session.add(user)
     db_session.commit()
@@ -64,7 +64,7 @@ def non_member(db_session):
         id=uuid.uuid4(),
         email=f"non_member_{uuid.uuid4().hex[:6]}@netraze.app",
         password_hash=get_password_hash("Password123!"),
-        role="survey_technician"
+        role="user"
     )
     db_session.add(user)
     db_session.commit()

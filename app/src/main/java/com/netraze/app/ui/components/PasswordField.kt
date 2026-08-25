@@ -1,5 +1,6 @@
 package com.netraze.app.ui.components
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -9,54 +10,58 @@ import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import com.netraze.app.ui.theme.InputPlaceholderOnBlue
+import com.netraze.app.ui.theme.InputPlaceholder
 
 @Composable
 fun PasswordField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String,
-    isPasswordVisible: Boolean,
-    onTogglePasswordVisibility: () -> Unit,
+    label: String = "Password",
     modifier: Modifier = Modifier,
     isError: Boolean = false,
     enabled: Boolean = true,
     imeAction: ImeAction = ImeAction.Done,
-    onImeAction: () -> Unit = {}
+    keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
+    var passwordVisible by remember { mutableStateOf(false) }
+
     AppTextField(
         value = value,
         onValueChange = onValueChange,
         label = label,
-        placeholder = placeholder,
-        modifier = modifier,
+        placeholder = "••••••••",
+        modifier = modifier.fillMaxWidth(),
         leadingIcon = Icons.Rounded.Lock,
         trailingIcon = {
-            IconButton(onClick = onTogglePasswordVisibility, enabled = enabled) {
+            val image = if (passwordVisible)
+                Icons.Rounded.Visibility
+            else Icons.Rounded.VisibilityOff
+            val description = if (passwordVisible) "Hide password" else "Show password"
+
+            IconButton(onClick = { passwordVisible = !passwordVisible }) {
                 Icon(
-                    imageVector = if (isPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                    contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
-                    tint = InputPlaceholderOnBlue
+                    imageVector = image,
+                    contentDescription = description,
+                    tint = InputPlaceholder
                 )
             }
         },
         isError = isError,
         enabled = enabled,
-        singleLine = true,
-        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Password,
             imeAction = imeAction
         ),
-        keyboardActions = KeyboardActions(
-            onDone = { onImeAction() },
-            onNext = { onImeAction() }
-        )
+        keyboardActions = keyboardActions
     )
 }

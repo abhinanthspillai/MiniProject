@@ -5,13 +5,13 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 val NetrazeShapes = Shapes(
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(32.dp)
+    small = RoundedCornerShape(16.dp),
+    medium = RoundedCornerShape(24.dp),
+    large = RoundedCornerShape(32.dp),
+    extraLarge = RoundedCornerShape(40.dp)
 )
 
-val TopSheetShape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-val CardShape = RoundedCornerShape(28.dp)
-val InputShape = RoundedCornerShape(12.dp)
-val ButtonShape = RoundedCornerShape(26.dp)
+val TopSheetShape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp)
+val CardShape = RoundedCornerShape(32.dp)
+val InputShape = RoundedCornerShape(20.dp)
+val ButtonShape = RoundedCornerShape(50) // Pill shape

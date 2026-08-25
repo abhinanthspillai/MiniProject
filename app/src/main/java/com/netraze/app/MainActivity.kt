@@ -56,9 +56,11 @@ import com.netraze.app.ui.survey.CreateSurveyDialog
 import com.netraze.app.ui.survey.SurveyViewModel
 import com.netraze.app.ui.survey.SurveysScreen
 import com.netraze.app.ui.theme.NetrazeTheme
-import com.netraze.app.ui.theme.PrimaryBlue
+import com.netraze.app.ui.theme.PrimaryDark
 import com.netraze.app.ui.theme.SurfaceLight
 import com.netraze.app.ui.theme.TextSecondary
+import com.netraze.app.ui.components.FloatingBottomNav
+import com.netraze.app.ui.components.NavItem
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -154,85 +156,31 @@ class MainActivity : ComponentActivity() {
                         val role = authState.userProfile?.role ?: authState.session?.role ?: "Unknown"
                         val userId = (authState.userProfile?.id ?: authState.session?.userId)?.toString() ?: "Unknown"
                         val recentSurvey = surveysState.surveys.firstOrNull { it.status.equals("in_progress", ignoreCase = true) }
-                            ?: surveysState.surveys.firstOrNull()
+                        val recentSurveys = surveysState.surveys.take(3)
+                        val allSynced = surveysState.surveys.isNotEmpty() && surveysState.surveys.all { it.syncState.equals("synced", ignoreCase = true) }
                         val isTopLevelScreen = currentScreen is ScreenState.Dashboard ||
                             currentScreen is ScreenState.AllSurveys ||
                             currentScreen is ScreenState.Locations ||
                             currentScreen is ScreenState.Account
 
                         Scaffold(
-                            bottomBar = {
-                                if (isTopLevelScreen) {
-                                    NavigationBar(containerColor = SurfaceLight) {
-                                        val isHome = currentScreen is ScreenState.Dashboard
-                                        val isAllSurveys = currentScreen is ScreenState.AllSurveys
-                                        val isLocations = currentScreen is ScreenState.Locations
-                                        val isAccount = currentScreen is ScreenState.Account
-
-                                        NavigationBarItem(
-                                            selected = isHome,
-                                            onClick = { currentScreen = ScreenState.Dashboard },
-                                            icon = { Icon(imageVector = Icons.Rounded.Home, contentDescription = "Home") },
-                                            label = { Text("Home") },
-                                            colors = NavigationBarItemDefaults.colors(
-                                                selectedIconColor = PrimaryBlue,
-                                                selectedTextColor = PrimaryBlue,
-                                                unselectedIconColor = TextSecondary,
-                                                unselectedTextColor = TextSecondary
-                                            )
-                                        )
-                                        NavigationBarItem(
-                                            selected = isAllSurveys,
-                                            onClick = { currentScreen = ScreenState.AllSurveys },
-                                            icon = { Icon(imageVector = Icons.Rounded.Assignment, contentDescription = "Surveys") },
-                                            label = { Text("Surveys") },
-                                            colors = NavigationBarItemDefaults.colors(
-                                                selectedIconColor = PrimaryBlue,
-                                                selectedTextColor = PrimaryBlue,
-                                                unselectedIconColor = TextSecondary,
-                                                unselectedTextColor = TextSecondary
-                                            )
-                                        )
-                                        NavigationBarItem(
-                                            selected = isLocations,
-                                            onClick = { currentScreen = ScreenState.Locations },
-                                            icon = { Icon(imageVector = Icons.Rounded.LocationOn, contentDescription = "Locations") },
-                                            label = { Text("Locations") },
-                                            colors = NavigationBarItemDefaults.colors(
-                                                selectedIconColor = PrimaryBlue,
-                                                selectedTextColor = PrimaryBlue,
-                                                unselectedIconColor = TextSecondary,
-                                                unselectedTextColor = TextSecondary
-                                            )
-                                        )
-                                        NavigationBarItem(
-                                            selected = isAccount,
-                                            onClick = { currentScreen = ScreenState.Account },
-                                            icon = { Icon(imageVector = Icons.Rounded.Person, contentDescription = "Account") },
-                                            label = { Text("Account") },
-                                            colors = NavigationBarItemDefaults.colors(
-                                                selectedIconColor = PrimaryBlue,
-                                                selectedTextColor = PrimaryBlue,
-                                                unselectedIconColor = TextSecondary,
-                                                unselectedTextColor = TextSecondary
-                                            )
-                                        )
-                                    }
-                                }
-                            }
+                            containerColor = SurfaceLight
                         ) { paddingValues ->
-                            Box(modifier = Modifier.padding(paddingValues)) {
+                            Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                                 when (val screen = currentScreen) {
                                     is ScreenState.Dashboard -> {
                                         DashboardHomeScreen(
                                             email = email,
                                             role = role,
                                             recentSurvey = recentSurvey,
+                                            recentSurveys = recentSurveys,
+                                            allSynced = allSynced,
                                             onStartSurveyClick = { showLocationSelector = true },
                                             onContinueSurveyClick = { survey ->
                                                 currentScreen = ScreenState.SurveyCanvas(survey, null, null, null, null)
                                             },
-                                            onBrowseLocations = { currentScreen = ScreenState.Locations }
+                                            onBrowseLocations = { currentScreen = ScreenState.Locations },
+                                            onViewAllSurveys = { currentScreen = ScreenState.AllSurveys }
                                         )
                                     }
                                     is ScreenState.AllSurveys -> {
@@ -294,6 +242,7 @@ class MainActivity : ComponentActivity() {
                                         FloorDetailScreen(
                                             viewModel = hierarchyViewModel,
                                             floor = screen.floor,
+                                            building = screen.building,
                                             project = screen.project,
                                             userRole = role,
                                             currentUserId = userId,
@@ -361,6 +310,33 @@ class MainActivity : ComponentActivity() {
                                             }
                                         )
                                     }
+                                }
+                                
+                                if (isTopLevelScreen) {
+                                    FloatingBottomNav(
+                                        items = listOf(
+                                            NavItem("dashboard", Icons.Rounded.Home, "Home"),
+                                            NavItem("surveys", Icons.Rounded.Assignment, "Surveys"),
+                                            NavItem("locations", Icons.Rounded.LocationOn, "Locations"),
+                                            NavItem("account", Icons.Rounded.Person, "Account")
+                                        ),
+                                        selectedId = when (currentScreen) {
+                                            is ScreenState.Dashboard -> "dashboard"
+                                            is ScreenState.AllSurveys -> "surveys"
+                                            is ScreenState.Locations -> "locations"
+                                            is ScreenState.Account -> "account"
+                                            else -> "dashboard"
+                                        },
+                                        onItemSelected = { id ->
+                                            currentScreen = when (id) {
+                                                "dashboard" -> ScreenState.Dashboard
+                                                "surveys" -> ScreenState.AllSurveys
+                                                "locations" -> ScreenState.Locations
+                                                "account" -> ScreenState.Account
+                                                else -> ScreenState.Dashboard
+                                            }
+                                        }
+                                    )
                                 }
                             }
                         }

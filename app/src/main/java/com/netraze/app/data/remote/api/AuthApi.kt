@@ -27,6 +27,11 @@ interface AuthApi {
         @Body request: CreateUserRequestDto
     ): UserDto
 
+    @POST("api/v1/auth/register")
+    suspend fun registerUser(
+        @Body request: com.netraze.app.data.remote.dto.RegisterRequestDto
+    ): UserDto
+
     @POST("api/v1/users/reset-password")
     suspend fun resetPassword(
         @Header("Authorization") authorizationToken: String,

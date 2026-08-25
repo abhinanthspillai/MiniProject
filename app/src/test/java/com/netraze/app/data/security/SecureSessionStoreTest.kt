@@ -43,7 +43,7 @@ class SecureSessionStoreTest {
             accessToken = "test_jwt_token_abcdef123456",
             userId = userId,
             email = "tech@netraze.app",
-            role = "survey_technician"
+            role = "user"
         )
 
         sessionStore.saveSession(session)
@@ -53,7 +53,7 @@ class SecureSessionStoreTest {
         assertEquals("test_jwt_token_abcdef123456", retrieved?.accessToken)
         assertEquals(userId, retrieved?.userId)
         assertEquals("tech@netraze.app", retrieved?.email)
-        assertEquals("survey_technician", retrieved?.role)
+        assertEquals("user", retrieved?.role)
         assertTrue(sessionStore.hasActiveSession())
     }
 

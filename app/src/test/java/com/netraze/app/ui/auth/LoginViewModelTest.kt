@@ -110,7 +110,7 @@ class LoginViewModelTest {
             newUserEmail = "newtech@netraze.app",
             newUserPassword = "Password123!",
             newUserConfirmPassword = "Password123!",
-            newUserRole = "survey_technician"
+            newUserRole = "user"
         )
 
         var createdEmail: String? = null
@@ -163,8 +163,8 @@ class LoginViewModelTest {
                 Result.failure(Exception("Invalid email address or password."))
             } else {
                 val userId = UUID.randomUUID()
-                currentSession = AuthSession("token_123", userId, email, "survey_technician")
-                Result.success(UserDto(id = userId, email = email, role = "survey_technician"))
+                currentSession = AuthSession("token_123", userId, email, "user")
+                Result.success(UserDto(id = userId, email = email, role = "user"))
             }
         }
 
@@ -204,11 +204,11 @@ class LoginViewModelTest {
     private class FakeAuthApi : AuthApi {
         override suspend fun login(request: LoginRequestDto): LoginResponseDto {
             val userId = UUID.randomUUID()
-            return LoginResponseDto("token_123", "bearer", UserDto(userId, request.email, "survey_technician"))
+            return LoginResponseDto("token_123", "bearer", UserDto(userId, request.email, "user"))
         }
 
         override suspend fun getMe(): UserDto {
-            return UserDto(UUID.randomUUID(), "tech@netraze.app", "survey_technician")
+            return UserDto(UUID.randomUUID(), "tech@netraze.app", "user")
         }
 
         override suspend fun createUser(

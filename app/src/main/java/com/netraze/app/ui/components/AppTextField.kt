@@ -15,14 +15,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.netraze.app.ui.theme.ErrorRed
-import com.netraze.app.ui.theme.InputBackgroundOnBlue
-import com.netraze.app.ui.theme.InputBorderOnBlue
-import com.netraze.app.ui.theme.InputFocusBorderOnBlue
-import com.netraze.app.ui.theme.InputPlaceholderOnBlue
+import com.netraze.app.ui.theme.InputBackground
+import com.netraze.app.ui.theme.InputBorder
+import com.netraze.app.ui.theme.InputFocusBorder
+import com.netraze.app.ui.theme.InputPlaceholder
 import com.netraze.app.ui.theme.InputShape
-import com.netraze.app.ui.theme.InputTextOnBlue
+import com.netraze.app.ui.theme.InputText
 import com.netraze.app.ui.theme.NetrazeTypography
-import com.netraze.app.ui.theme.TextOnBlue
+import com.netraze.app.ui.theme.TextPrimary
 
 @Composable
 fun AppTextField(
@@ -44,7 +44,7 @@ fun AppTextField(
         Text(
             text = label,
             style = NetrazeTypography.labelLarge,
-            color = TextOnBlue,
+            color = TextPrimary,
             modifier = Modifier.padding(bottom = 6.dp)
         )
         OutlinedTextField(
@@ -53,12 +53,12 @@ fun AppTextField(
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             singleLine = singleLine,
-            textStyle = NetrazeTypography.bodyLarge.copy(color = InputTextOnBlue),
+            textStyle = NetrazeTypography.bodyLarge.copy(color = InputText),
             placeholder = {
                 Text(
                     text = placeholder,
                     style = NetrazeTypography.bodyLarge,
-                    color = InputPlaceholderOnBlue
+                    color = InputPlaceholder
                 )
             },
             leadingIcon = leadingIcon?.let {
@@ -66,7 +66,7 @@ fun AppTextField(
                     Icon(
                         imageVector = it,
                         contentDescription = null,
-                        tint = if (isError) ErrorRed else InputPlaceholderOnBlue
+                        tint = if (isError) ErrorRed else InputPlaceholder
                     )
                 }
             },
@@ -77,16 +77,16 @@ fun AppTextField(
             keyboardActions = keyboardActions,
             shape = InputShape,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = InputBackgroundOnBlue,
-                unfocusedContainerColor = InputBackgroundOnBlue,
-                disabledContainerColor = InputBackgroundOnBlue.copy(alpha = 0.15f),
-                errorContainerColor = InputBackgroundOnBlue,
-                focusedBorderColor = InputFocusBorderOnBlue,
-                unfocusedBorderColor = InputBorderOnBlue,
-                disabledBorderColor = InputBorderOnBlue.copy(alpha = 0.2f),
+                focusedContainerColor = InputBackground,
+                unfocusedContainerColor = InputBackground,
+                disabledContainerColor = InputBackground.copy(alpha = 0.5f),
+                errorContainerColor = InputBackground,
+                focusedBorderColor = InputFocusBorder,
+                unfocusedBorderColor = InputBorder,
+                disabledBorderColor = InputBorder.copy(alpha = 0.5f),
                 errorBorderColor = ErrorRed,
-                focusedLeadingIconColor = InputFocusBorderOnBlue,
-                unfocusedLeadingIconColor = InputPlaceholderOnBlue
+                focusedLeadingIconColor = InputFocusBorder,
+                unfocusedLeadingIconColor = InputPlaceholder
             )
         )
     }
