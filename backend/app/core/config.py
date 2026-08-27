@@ -11,6 +11,15 @@ class Settings(BaseSettings):
     # Database Connection
     DATABASE_URL: str = "postgresql+psycopg://netraze_app:1234@127.0.0.1:5432/netraze"
 
+    @validator("DATABASE_URL", pre=True)
+    def assemble_db_connection(cls, v: str) -> str:
+        if isinstance(v, str):
+            if v.startswith("postgres://"):
+                return v.replace("postgres://", "postgresql+psycopg://", 1)
+            if v.startswith("postgresql://"):
+                return v.replace("postgresql://", "postgresql+psycopg://", 1)
+        return v
+
     # JWT Authentication Security Settings (D090)
     SECRET_KEY: str = "netraze_development_secret_key_change_in_production_987654321"
     ALGORITHM: str = "HS256"
