@@ -43,11 +43,13 @@ object NetworkModule {
                 Build.MANUFACTURER.contains("Genymotion") ||
                 (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic")) ||
                 "google_sdk" == Build.PRODUCT)
-        return if (isEmulator) {
+        val baseUrl = if (isEmulator) {
             "http://10.0.2.2:8000/"
         } else {
-            "http://10.243.41.45:8000/"
+            "https://netraze.onrender.com/"
         }
+        android.util.Log.d("NETRAZE_API", "Base URL = $baseUrl")
+        return baseUrl
     }
 
     @Provides
@@ -65,8 +67,8 @@ object NetworkModule {
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
             })
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
             .build()
     }
 
